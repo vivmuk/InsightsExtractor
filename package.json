@@ -1,0 +1,12 @@
+{
+  "name": "medical-document-extraction",
+  "version": "1.0.0",
+  "description": "A tool for extracting medical information from documents using Venice.ai API",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+} 
