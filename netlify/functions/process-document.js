@@ -15,7 +15,7 @@ exports.handler = async function(event, context) {
   try {
     // Parse the request body
     const requestBody = JSON.parse(event.body);
-    const { prompt, imageBase64, model } = requestBody;
+    const { prompt, imageBase64, model, tempApiKey } = requestBody;
     
     if (!prompt) {
       return {
@@ -27,11 +27,11 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Get the API key from environment variables (set in Netlify dashboard)
-    const apiKey = process.env.VENICE_API_KEY;
+    // Get the API key - use temporary key if provided, otherwise use environment variable
+    const apiKey = tempApiKey || process.env.VENICE_API_KEY;
     
     if (!apiKey) {
-      console.log('API key not configured in environment variables');
+      console.log('API key not configured in environment variables and no temporary key provided');
       return {
         statusCode: 500,
         body: JSON.stringify({ 
@@ -42,7 +42,7 @@ exports.handler = async function(event, context) {
     }
 
     // Log function execution start for debugging
-    console.log(`Processing document with model: ${model || 'qwen-2.5-vl'}`);
+    console.log(`Processing document with model: ${model || 'qwen-2.5-vl'}, using ${tempApiKey ? 'temporary' : 'environment'} API key`);
     
     // Prepare the request to Venice.ai API
     const veniceApiUrl = 'https://api.venice.ai/api/v1/chat/completions';
@@ -105,7 +105,8 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({ 
         content,
         dataSource: 'api',
-        model: model || 'qwen-2.5-vl'
+        model: model || 'qwen-2.5-vl',
+        usingTempKey: !!tempApiKey
       })
     };
   } catch (error) {

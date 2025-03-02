@@ -171,6 +171,45 @@
         .debug-toggle input {
             margin-right: 5px;
         }
+        .api-key-test {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px dashed #e74c3c;
+            display: none;
+        }
+        .api-key-test input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .api-key-test button {
+            background-color: #e74c3c;
+        }
+        .api-key-test button:hover {
+            background-color: #c0392b;
+        }
+        .api-key-input {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #3498db;
+        }
+        .api-key-input input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .api-key-input p {
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -189,6 +228,14 @@
                 <option value="deepseek-r1-llama-70b">DeepSeek R1 Llama 70B</option>
                 <option value="deepseek-r1-671b">DeepSeek R1 671B</option>
             </select>
+        </div>
+        
+        <div class="api-key-input" id="api-key-input">
+            <h2>Venice.ai API Key</h2>
+            <p>Enter your Venice.ai API key to process documents. This key is only used for processing and is not stored.</p>
+            <input type="password" id="api-key" placeholder="Enter your Venice.ai API key" value="LB6aPLu3J8DPuVBjWZQsyDUPx0eq0NJIDzIW2_CRLm">
+            <button id="test-key-button" style="margin-top: 10px; background-color: #27ae60;">Test API Key</button>
+            <div id="api-key-status" style="margin-top: 10px;"></div>
         </div>
         
         <div class="upload-section">
@@ -244,6 +291,14 @@
             <h3>Debug Information</h3>
             <p>API Request/Response Details:</p>
             <div class="debug-log" id="debug-log"></div>
+            
+            <div class="api-key-test" id="api-key-test">
+                <h4>Temporary API Key Test</h4>
+                <p><strong>Warning:</strong> This is only for testing. The key will not be stored permanently.</p>
+                <input type="password" id="test-api-key" placeholder="Enter Venice.ai API Key for testing">
+                <button id="test-api-button">Test API Connection</button>
+                <div id="test-api-result" style="margin-top: 10px;"></div>
+            </div>
         </div>
     </div>
 
@@ -266,6 +321,13 @@
         const debugToggle = document.getElementById('debug-toggle');
         const debugSection = document.getElementById('debug-section');
         const debugLog = document.getElementById('debug-log');
+        const apiKeyTest = document.getElementById('api-key-test');
+        const testApiKey = document.getElementById('test-api-key');
+        const testApiButton = document.getElementById('test-api-button');
+        const testApiResult = document.getElementById('test-api-result');
+        const apiKeyInput = document.getElementById('api-key');
+        const testKeyButton = document.getElementById('test-key-button');
+        const apiKeyStatus = document.getElementById('api-key-status');
         
         // Initialize API status as hidden
         apiStatus.style.display = 'none';
@@ -273,6 +335,7 @@
         // Debug mode toggle
         debugToggle.addEventListener('change', function() {
             debugSection.style.display = this.checked ? 'block' : 'none';
+            apiKeyTest.style.display = this.checked ? 'block' : 'none';
             // Store preference in localStorage
             localStorage.setItem('debugMode', this.checked);
         });
@@ -281,7 +344,81 @@
         if (localStorage.getItem('debugMode') === 'true') {
             debugToggle.checked = true;
             debugSection.style.display = 'block';
+            apiKeyTest.style.display = 'block';
         }
+        
+        // API Key test functionality
+        testApiButton.addEventListener('click', async function() {
+            const apiKey = testApiKey.value.trim();
+            if (!apiKey) {
+                testApiResult.innerHTML = '<span style="color: #e74c3c;">Please enter an API key</span>';
+                return;
+            }
+            
+            testApiResult.innerHTML = '<span style="color: #3498db;">Testing API connection...</span>';
+            
+            try {
+                const response = await fetch('/api/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    testApiResult.innerHTML = `<span style="color: #2ecc71;">✓ API connection successful! Models available: ${data.models ? data.models.length : 'Unknown'}</span>`;
+                    logDebug('API Test successful:', data);
+                } else {
+                    testApiResult.innerHTML = `<span style="color: #e74c3c;">✗ API connection failed: ${data.error || 'Unknown error'}</span>`;
+                    logDebug('API Test failed:', data);
+                }
+            } catch (error) {
+                testApiResult.innerHTML = `<span style="color: #e74c3c;">✗ Error testing API: ${error.message}</span>`;
+                logDebug('API Test error:', error.message);
+            }
+            
+            // Clear the API key from the input field after testing
+            setTimeout(() => {
+                testApiKey.value = '';
+            }, 3000);
+        });
+        
+        // Test API key button
+        testKeyButton.addEventListener('click', async function() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                apiKeyStatus.innerHTML = '<span style="color: #e74c3c;">Please enter an API key</span>';
+                return;
+            }
+            
+            apiKeyStatus.innerHTML = '<span style="color: #3498db;">Testing API connection...</span>';
+            
+            try {
+                const response = await fetch('/api/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    apiKeyStatus.innerHTML = `<span style="color: #2ecc71;">✓ API connection successful! Models available: ${data.models ? data.models.length : 'Unknown'}</span>`;
+                    logDebug('API Key Test successful:', data);
+                } else {
+                    apiKeyStatus.innerHTML = `<span style="color: #e74c3c;">✗ API connection failed: ${data.error || 'Unknown error'}</span>`;
+                    logDebug('API Key Test failed:', data);
+                }
+            } catch (error) {
+                apiKeyStatus.innerHTML = `<span style="color: #e74c3c;">✗ Error testing API: ${error.message}</span>`;
+                logDebug('API Key Test error:', error.message);
+            }
+        });
         
         // Function to log debug information
         function logDebug(message, data) {
@@ -482,13 +619,17 @@
             const model = modelSelect.value;
             logDebug(`Calling API with model: ${model}`);
             
+            // Get the API key from the input field
+            const apiKey = apiKeyInput.value.trim();
+            
             try {
                 // Truncate base64 for logging to avoid overwhelming the console
                 const truncatedBase64 = imageBase64.substring(0, 100) + '... [truncated]';
                 logDebug('API Request:', { 
                     prompt, 
                     imageBase64: truncatedBase64,
-                    model 
+                    model,
+                    usingApiKey: !!apiKey
                 });
                 
                 const startTime = performance.now();
@@ -501,7 +642,8 @@
                     body: JSON.stringify({
                         prompt,
                         imageBase64,
-                        model
+                        model,
+                        tempApiKey: apiKey // Send the API key to the function
                     })
                 });
                 
