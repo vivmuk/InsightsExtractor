@@ -143,6 +143,34 @@
         .api-status.api-error .status-indicator {
             background-color: #e74c3c; /* Red for API error */
         }
+        .debug-section {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .debug-log {
+            font-family: monospace;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .debug-toggle {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .debug-toggle input {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -206,6 +234,17 @@
                 </tbody>
             </table>
         </div>
+        
+        <div class="debug-toggle">
+            <input type="checkbox" id="debug-toggle">
+            <label for="debug-toggle">Enable Debug Mode</label>
+        </div>
+        
+        <div class="debug-section" id="debug-section">
+            <h3>Debug Information</h3>
+            <p>API Request/Response Details:</p>
+            <div class="debug-log" id="debug-log"></div>
+        </div>
     </div>
 
     <script>
@@ -224,9 +263,42 @@
         const processSuccess = document.getElementById('process-success');
         const modelSelect = document.getElementById('model-select');
         const apiStatus = document.getElementById('api-status');
+        const debugToggle = document.getElementById('debug-toggle');
+        const debugSection = document.getElementById('debug-section');
+        const debugLog = document.getElementById('debug-log');
         
         // Initialize API status as hidden
         apiStatus.style.display = 'none';
+        
+        // Debug mode toggle
+        debugToggle.addEventListener('change', function() {
+            debugSection.style.display = this.checked ? 'block' : 'none';
+            // Store preference in localStorage
+            localStorage.setItem('debugMode', this.checked);
+        });
+        
+        // Check if debug mode was previously enabled
+        if (localStorage.getItem('debugMode') === 'true') {
+            debugToggle.checked = true;
+            debugSection.style.display = 'block';
+        }
+        
+        // Function to log debug information
+        function logDebug(message, data) {
+            if (debugToggle.checked) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                
+                if (typeof data === 'object') {
+                    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message}<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message} ${data || ''}`;
+                }
+                
+                debugLog.appendChild(logEntry);
+                debugLog.scrollTop = debugLog.scrollHeight;
+            }
+        }
         
         // Store uploaded files
         let uploadedFiles = [];
@@ -260,6 +332,7 @@
                 }
                 
                 uploadedFiles.push(file);
+                logDebug('File added:', file.name);
                 
                 // Create file item in the list
                 const fileItem = document.createElement('div');
@@ -282,7 +355,9 @@
         // Remove a file from the list
         function removeFile(event) {
             const index = parseInt(event.target.getAttribute('data-index'));
+            const removedFile = uploadedFiles[index];
             uploadedFiles.splice(index, 1);
+            logDebug('File removed:', removedFile.name);
             
             // Rebuild the file list
             fileList.innerHTML = '';
@@ -323,11 +398,18 @@
             processSuccess.style.display = 'none';
             apiStatus.style.display = 'none'; // Hide the status initially
             
+            // Clear previous debug logs if in debug mode
+            if (debugToggle.checked) {
+                debugLog.innerHTML = '';
+                logDebug('Starting document processing');
+            }
+            
             try {
                 extractedData = [];
                 
                 for (let i = 0; i < uploadedFiles.length; i++) {
                     const file = uploadedFiles[i];
+                    logDebug(`Processing file ${i+1}/${uploadedFiles.length}:`, file.name);
                     await processFile(file, i + 1);
                 }
                 
@@ -337,11 +419,13 @@
                 resultsSection.style.display = 'block';
                 processSuccess.textContent = 'Documents processed successfully!';
                 processSuccess.style.display = 'block';
+                logDebug('Document processing completed successfully');
                 
             } catch (error) {
                 loadingElement.style.display = 'none';
                 processError.textContent = 'Error processing documents: ' + error.message;
                 processError.style.display = 'block';
+                logDebug('Error processing documents:', error.message);
                 console.error(error);
             }
         }
@@ -351,10 +435,13 @@
             // Convert file to base64
             const base64 = await fileToBase64(file);
             const fileType = file.name.split('.').pop().toLowerCase();
+            logDebug(`File converted to base64, size: ${Math.round(base64.length / 1024)} KB`);
             
             // Simulate document segmentation (in a real app, you'd use a proper PDF/PPT parser)
             // For this MVP, we'll simulate 3 pages/slides per document
             for (let pageIndex = 1; pageIndex <= 3; pageIndex++) {
+                logDebug(`Processing ${fileType} - page/slide ${pageIndex}`);
+                
                 // Create a prompt for the LLM
                 const prompt = `
                 You are a medical document analysis expert. Extract the following information from this ${fileType.toUpperCase()} document (page/slide ${pageIndex}):
@@ -375,6 +462,7 @@
                 
                 // Parse the response
                 const extractedInfo = parseApiResponse(result);
+                logDebug(`Extracted info for page ${pageIndex}:`, extractedInfo);
                 
                 // Add to extracted data
                 extractedData.push({
@@ -392,8 +480,19 @@
         // Call our Netlify Function
         async function callNetlifyFunction(prompt, imageBase64) {
             const model = modelSelect.value;
+            logDebug(`Calling API with model: ${model}`);
             
             try {
+                // Truncate base64 for logging to avoid overwhelming the console
+                const truncatedBase64 = imageBase64.substring(0, 100) + '... [truncated]';
+                logDebug('API Request:', { 
+                    prompt, 
+                    imageBase64: truncatedBase64,
+                    model 
+                });
+                
+                const startTime = performance.now();
+                
                 const response = await fetch('/api/process-document', {
                     method: 'POST',
                     headers: {
@@ -406,12 +505,22 @@
                     })
                 });
                 
+                const endTime = performance.now();
+                const requestDuration = (endTime - startTime).toFixed(2);
+                logDebug(`API Response received in ${requestDuration}ms, Status: ${response.status}`);
+                
                 if (!response.ok) {
                     const errorData = await response.json();
+                    logDebug('API Error:', errorData);
                     throw new Error(errorData.error || 'Error calling API');
                 }
                 
                 const data = await response.json();
+                logDebug('API Response data:', {
+                    dataSource: data.dataSource,
+                    model: data.model,
+                    contentLength: data.content ? data.content.length : 0
+                });
                 
                 // Update status based on the data source from the API response
                 if (data.dataSource === 'api') {
@@ -426,6 +535,7 @@
                 return data.content;
             } catch (error) {
                 console.error('Error calling Netlify function:', error);
+                logDebug('Error calling Netlify function:', error.message);
                 
                 // Update status to show simulated data
                 apiStatus.className = 'api-status simulated';
@@ -433,7 +543,7 @@
                 apiStatus.style.display = 'flex';
                 
                 // For development/demo purposes, fall back to simulated data if the function fails
-                console.log('Falling back to simulated data');
+                logDebug('Falling back to simulated data');
                 return simulateMedicalDataExtraction(prompt);
             }
         }
@@ -444,6 +554,8 @@
             const pageMatch = prompt.match(/page\/slide (\d+) of document (\d+)/);
             const page = pageMatch ? parseInt(pageMatch[1]) : 1;
             const doc = pageMatch ? parseInt(pageMatch[2]) : 1;
+            
+            logDebug(`Generating simulated data for page ${page} of document ${doc}`);
             
             // Create different simulated data based on page number
             const simulatedData = [
@@ -483,6 +595,7 @@
                 return JSON.parse(response);
             } catch (error) {
                 console.error('Error parsing API response:', error);
+                logDebug('Error parsing API response:', error.message);
                 return {
                     title: 'Error parsing response',
                     summary: 'Could not extract information from this page/slide',
@@ -552,6 +665,8 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            logDebug('CSV downloaded with', extractedData.length + ' rows');
         }
     </script>
 </body>

@@ -1,4 +1,6 @@
 // Netlify Function to process documents with Venice.ai API
+// Note: The DEP0040 warning about punycode is related to dependencies and can be ignored
+// It's a Node.js internal module that's being deprecated but still used by some packages
 const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
@@ -18,7 +20,10 @@ exports.handler = async function(event, context) {
     if (!prompt) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Prompt is required' })
+        body: JSON.stringify({ 
+          error: 'Prompt is required',
+          dataSource: 'none'
+        })
       };
     }
 
@@ -26,6 +31,7 @@ exports.handler = async function(event, context) {
     const apiKey = process.env.VENICE_API_KEY;
     
     if (!apiKey) {
+      console.log('API key not configured in environment variables');
       return {
         statusCode: 500,
         body: JSON.stringify({ 
@@ -35,32 +41,20 @@ exports.handler = async function(event, context) {
       };
     }
 
+    // Log function execution start for debugging
+    console.log(`Processing document with model: ${model || 'qwen-2.5-vl'}`);
+    
     // Prepare the request to Venice.ai API
     const veniceApiUrl = 'https://api.venice.ai/api/v1/chat/completions';
     
-    // Create the messages array
-    const messages = [
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    // If an image is provided, add it to the message content
-    if (imageBase64) {
-      messages[0].content = [
-        {
-          type: 'text',
-          text: prompt
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: `data:image/png;base64,${imageBase64}`
-          }
-        }
-      ];
-    }
+    // Create the messages array - optimize by directly creating the final structure
+    const messages = [{
+      role: 'user',
+      content: imageBase64 ? [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}` } }
+      ] : prompt
+    }];
 
     // Create the request payload
     const payload = {
@@ -85,6 +79,7 @@ exports.handler = async function(event, context) {
 
     // Check for errors
     if (!response.ok) {
+      console.error('Error from Venice.ai API:', data);
       return {
         statusCode: response.status,
         body: JSON.stringify({ 
@@ -101,6 +96,9 @@ exports.handler = async function(event, context) {
       content = data.choices[0].message.content;
     }
 
+    // Log successful API call
+    console.log('Venice.ai API call successful');
+    
     // Return the response with data source information
     return {
       statusCode: 200,
@@ -111,7 +109,7 @@ exports.handler = async function(event, context) {
       })
     };
   } catch (error) {
-    console.error('Error processing document:', error);
+    console.error('Error processing document:', error.message);
     
     return {
       statusCode: 500,
