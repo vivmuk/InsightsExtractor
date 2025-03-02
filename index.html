@@ -118,6 +118,31 @@
             margin: 10px 0;
             display: none;
         }
+        .api-status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+        }
+        .api-status.simulated .status-indicator {
+            background-color: #f39c12; /* Orange for simulated */
+        }
+        .api-status.api-success .status-indicator {
+            background-color: #2ecc71; /* Green for API success */
+        }
+        .api-status.api-error .status-indicator {
+            background-color: #e74c3c; /* Red for API error */
+        }
     </style>
 </head>
 <body>
@@ -156,6 +181,10 @@
         
         <div class="error-message" id="process-error"></div>
         <div class="success-message" id="process-success"></div>
+        <div class="api-status" id="api-status">
+            <span class="status-indicator"></span>
+            <span class="status-text">Data source: </span>
+        </div>
         
         <div class="results-section" id="results-section">
             <h2>Extracted Medical Information</h2>
@@ -194,6 +223,10 @@
         const processError = document.getElementById('process-error');
         const processSuccess = document.getElementById('process-success');
         const modelSelect = document.getElementById('model-select');
+        const apiStatus = document.getElementById('api-status');
+        
+        // Initialize API status as hidden
+        apiStatus.style.display = 'none';
         
         // Store uploaded files
         let uploadedFiles = [];
@@ -288,6 +321,7 @@
             loadingElement.style.display = 'block';
             processError.style.display = 'none';
             processSuccess.style.display = 'none';
+            apiStatus.style.display = 'none'; // Hide the status initially
             
             try {
                 extractedData = [];
@@ -325,7 +359,7 @@
                 const prompt = `
                 You are a medical document analysis expert. Extract the following information from this ${fileType.toUpperCase()} document (page/slide ${pageIndex}):
                 
-                1. Title: The main title or heading of this page/slide
+                1. Title: Extract the EXACT main title or heading of this page/slide. This is very important. Look for the largest text, text at the top of the slide, or text that appears to be a heading.
                 2. Summary: A brief 1-2 sentence summary of the key information
                 3. Medical Terms: List any specialized medical terminology (comma-separated)
                 4. Diagnoses: List any medical diagnoses mentioned (comma-separated)
@@ -378,9 +412,25 @@
                 }
                 
                 const data = await response.json();
+                
+                // Update status based on the data source from the API response
+                if (data.dataSource === 'api') {
+                    apiStatus.className = 'api-status api-success';
+                    apiStatus.querySelector('.status-text').textContent = `Data source: Venice.ai API (${data.model || 'unknown model'})`;
+                } else {
+                    apiStatus.className = 'api-status simulated';
+                    apiStatus.querySelector('.status-text').textContent = 'Data source: Simulated data';
+                }
+                apiStatus.style.display = 'flex';
+                
                 return data.content;
             } catch (error) {
                 console.error('Error calling Netlify function:', error);
+                
+                // Update status to show simulated data
+                apiStatus.className = 'api-status simulated';
+                apiStatus.querySelector('.status-text').textContent = 'Data source: Simulated data (API call failed)';
+                apiStatus.style.display = 'flex';
                 
                 // For development/demo purposes, fall back to simulated data if the function fails
                 console.log('Falling back to simulated data');
@@ -398,25 +448,25 @@
             // Create different simulated data based on page number
             const simulatedData = [
                 {
-                    title: "Introduction to Cardiovascular Disease",
-                    summary: "Overview of common cardiovascular conditions and their prevalence in the adult population.",
-                    medicalTerms: "myocardial infarction, atherosclerosis, hypertension, arrhythmia",
-                    diagnoses: "coronary artery disease, heart failure, atrial fibrillation",
-                    treatments: "statins, beta-blockers, ACE inhibitors, angioplasty"
+                    title: "Gastrointestinal Malignancies: Overview and Epidemiology",
+                    summary: "Introduction to common GI tract cancers and their prevalence in different populations.",
+                    medicalTerms: "adenocarcinoma, squamous cell carcinoma, neoplasm, metastasis, oncogenesis",
+                    diagnoses: "colorectal cancer, gastric cancer, esophageal cancer, pancreatic cancer",
+                    treatments: "surgical resection, chemotherapy, radiation therapy, immunotherapy"
                 },
                 {
-                    title: "Diabetes Management Protocol",
-                    summary: "Current guidelines for managing Type 2 Diabetes with focus on glycemic control.",
-                    medicalTerms: "hyperglycemia, insulin resistance, HbA1c, ketoacidosis",
-                    diagnoses: "Type 2 Diabetes Mellitus, diabetic neuropathy, diabetic retinopathy",
-                    treatments: "metformin, GLP-1 agonists, insulin therapy, lifestyle modification"
+                    title: "Colorectal Cancer: Screening and Early Detection",
+                    summary: "Current guidelines for colorectal cancer screening methods and their effectiveness in reducing mortality.",
+                    medicalTerms: "colonoscopy, fecal occult blood test, polyp, adenoma, carcinoembryonic antigen",
+                    diagnoses: "adenomatous polyps, stage I-IV colorectal carcinoma, Lynch syndrome",
+                    treatments: "polypectomy, colectomy, FOLFOX regimen, targeted therapy"
                 },
                 {
-                    title: "Neurological Assessment Techniques",
-                    summary: "Standardized methods for evaluating neurological function in patients with suspected disorders.",
-                    medicalTerms: "paresthesia, dysarthria, ataxia, nystagmus, aphasia",
-                    diagnoses: "multiple sclerosis, Parkinson's disease, epilepsy, stroke",
-                    treatments: "levodopa, anticonvulsants, physical therapy, speech therapy"
+                    title: "Advanced Treatment Modalities for GI Malignancies",
+                    summary: "Novel therapeutic approaches for managing advanced and metastatic gastrointestinal cancers.",
+                    medicalTerms: "targeted therapy, checkpoint inhibitors, neoadjuvant, adjuvant, palliation",
+                    diagnoses: "metastatic colorectal cancer, advanced gastric cancer, pancreatic adenocarcinoma",
+                    treatments: "EGFR inhibitors, anti-VEGF therapy, immunotherapy, palliative care"
                 }
             ];
             

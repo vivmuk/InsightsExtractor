@@ -28,7 +28,10 @@ exports.handler = async function(event, context) {
     if (!apiKey) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'API key not configured' })
+        body: JSON.stringify({ 
+          error: 'API key not configured',
+          dataSource: 'none'
+        })
       };
     }
 
@@ -86,7 +89,8 @@ exports.handler = async function(event, context) {
         statusCode: response.status,
         body: JSON.stringify({ 
           error: 'Error from Venice.ai API', 
-          details: data 
+          details: data,
+          dataSource: 'error'
         })
       };
     }
@@ -97,17 +101,25 @@ exports.handler = async function(event, context) {
       content = data.choices[0].message.content;
     }
 
-    // Return the response
+    // Return the response with data source information
     return {
       statusCode: 200,
-      body: JSON.stringify({ content })
+      body: JSON.stringify({ 
+        content,
+        dataSource: 'api',
+        model: model || 'qwen-2.5-vl'
+      })
     };
   } catch (error) {
     console.error('Error processing document:', error);
     
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error', message: error.message })
+      body: JSON.stringify({ 
+        error: 'Internal Server Error', 
+        message: error.message,
+        dataSource: 'error'
+      })
     };
   }
 }; 
