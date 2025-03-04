@@ -26,18 +26,36 @@ exports.handler = async function(event, context) {
       throw new Error('Only POST requests are allowed');
     }
 
-    const { file, apiKey, model } = JSON.parse(event.body);
+    console.log('Processing request...');
+    const { file, apiKey, model, filename } = JSON.parse(event.body);
+    
+    if (!file || !apiKey || !model) {
+      throw new Error('Missing required parameters: file, apiKey, or model');
+    }
 
+    console.log('Creating file buffer...');
     // Convert base64 to buffer
     const fileBuffer = Buffer.from(file, 'base64');
+    console.log('File buffer created, size:', fileBuffer.length);
 
-    // Create FormData and append file
+    // Create FormData
+    console.log('Creating FormData...');
     const formData = new FormData();
+    
+    // Get file extension from filename or default to .pdf
+    const fileExtension = filename ? `.${filename.split('.').pop()}` : '.pdf';
+    const mimeType = fileExtension === '.pdf' ? 'application/pdf' : 
+                     fileExtension === '.ppt' ? 'application/vnd.ms-powerpoint' :
+                     fileExtension === '.pptx' ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' :
+                     'application/octet-stream';
+
+    // Append file with proper filename and content type
     formData.append('file', fileBuffer, {
-      filename: 'document.pdf',
-      contentType: 'application/pdf'
+      filename: `document${fileExtension}`,
+      contentType: mimeType
     });
 
+    console.log('Uploading file to Venice.ai...');
     // Upload file to Venice.ai
     const fileUploadResponse = await fetch('https://api.venice.ai/api/v1/files', {
       method: 'POST',
@@ -48,14 +66,16 @@ exports.handler = async function(event, context) {
       body: formData
     });
 
+    console.log('File upload response status:', fileUploadResponse.status);
+    const uploadResponseText = await fileUploadResponse.text();
+    console.log('File upload response:', uploadResponseText);
+
     if (!fileUploadResponse.ok) {
-      const errorText = await fileUploadResponse.text();
-      console.error('File upload error:', errorText);
-      throw new Error(`File upload failed: ${errorText}`);
+      throw new Error(`File upload failed (${fileUploadResponse.status}): ${uploadResponseText}`);
     }
 
-    const uploadData = await fileUploadResponse.json();
-    console.log('File upload successful:', uploadData);
+    const uploadData = JSON.parse(uploadResponseText);
+    console.log('File upload successful, ID:', uploadData.id);
 
     // Create chat completion request
     const payload = {
@@ -86,8 +106,7 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
       max_tokens: 2000
     };
 
-    console.log('Sending chat completion request:', payload);
-
+    console.log('Sending chat completion request...');
     const completionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -97,13 +116,15 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
       body: JSON.stringify(payload)
     });
 
+    console.log('Chat completion response status:', completionResponse.status);
+    const completionResponseText = await completionResponse.text();
+    console.log('Chat completion response:', completionResponseText);
+
     if (!completionResponse.ok) {
-      const errorText = await completionResponse.text();
-      console.error('Chat completion error:', errorText);
-      throw new Error(`Chat completion failed: ${errorText}`);
+      throw new Error(`Chat completion failed (${completionResponse.status}): ${completionResponseText}`);
     }
 
-    const result = await completionResponse.json();
+    const result = JSON.parse(completionResponseText);
     console.log('Chat completion successful');
 
     return {
@@ -116,7 +137,10 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message })
+      body: JSON.stringify({ 
+        error: error.message,
+        stack: error.stack
+      })
     };
   }
 }; 
