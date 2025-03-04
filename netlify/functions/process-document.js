@@ -2,123 +2,103 @@
 // Note: The DEP0040 warning about punycode is related to dependencies and can be ignored
 // It's a Node.js internal module that's being deprecated but still used by some packages
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 
 exports.handler = async function(event, context) {
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' })
+      statusCode: 200,
+      headers,
+      body: ''
     };
   }
 
   try {
-    // Parse the request body
-    const requestBody = JSON.parse(event.body);
-    const { prompt, imageBase64, model, tempApiKey } = requestBody;
-    
-    if (!prompt) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ 
-          error: 'Prompt is required',
-          dataSource: 'none'
-        })
-      };
+    if (event.httpMethod !== 'POST') {
+      throw new Error('Only POST requests are allowed');
     }
 
-    // Get the API key - use temporary key if provided, otherwise use environment variable
-    const apiKey = tempApiKey || process.env.VENICE_API_KEY;
-    
-    if (!apiKey) {
-      console.log('API key not configured in environment variables and no temporary key provided');
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          error: 'API key not configured',
-          dataSource: 'none'
-        })
-      };
-    }
+    const { file, apiKey, model } = JSON.parse(event.body);
 
-    // Log function execution start for debugging
-    console.log(`Processing document with model: ${model || 'qwen-2.5-vl'}, using ${tempApiKey ? 'temporary' : 'environment'} API key`);
-    
-    // Prepare the request to Venice.ai API
-    const veniceApiUrl = 'https://api.venice.ai/api/v1/chat/completions';
-    
-    // Create the messages array - optimize by directly creating the final structure
-    const messages = [{
-      role: 'user',
-      content: imageBase64 ? [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:image/png;base64,${imageBase64}` } }
-      ] : prompt
-    }];
-
-    // Create the request payload
-    const payload = {
-      model: model || 'qwen-2.5-vl', // Default to Qwen 2.5 VL if not specified
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 1000
-    };
-
-    // Make the request to Venice.ai API
-    const response = await fetch(veniceApiUrl, {
+    // First, upload the file to Venice.ai
+    const fileUploadResponse = await fetch('https://api.venice.ai/api/v1/files', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
+      },
+      body: file
+    });
+
+    if (!fileUploadResponse.ok) {
+      throw new Error('File upload failed: ' + await fileUploadResponse.text());
+    }
+
+    const { id: fileId } = await fileUploadResponse.json();
+
+    // Create the chat completion request
+    const payload = {
+      model: model,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Please analyze this document and extract the following information:
+1. Title: The main heading or title
+2. Summary: A brief overview
+3. Medical Terms: Any specialized medical terminology
+4. Diagnoses: Any medical diagnoses mentioned
+5. Treatments: Any treatments or procedures mentioned
+
+Format the response as JSON with these fields: title, summary, medicalTerms, diagnoses, treatments`
+            },
+            {
+              type: "file",
+              file_id: fileId
+            }
+          ]
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    };
+
+    // Make the chat completion API call
+    const completionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
 
-    // Parse the response
-    const data = await response.json();
-
-    // Check for errors
-    if (!response.ok) {
-      console.error('Error from Venice.ai API:', data);
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ 
-          error: 'Error from Venice.ai API', 
-          details: data,
-          dataSource: 'error'
-        })
-      };
+    if (!completionResponse.ok) {
+      throw new Error('Chat completion failed: ' + await completionResponse.text());
     }
 
-    // Extract the content from the response
-    let content = '';
-    if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-      content = data.choices[0].message.content;
-    }
+    const result = await completionResponse.json();
 
-    // Log successful API call
-    console.log('Venice.ai API call successful');
-    
-    // Return the response with data source information
     return {
       statusCode: 200,
-      body: JSON.stringify({ 
-        content,
-        dataSource: 'api',
-        model: model || 'qwen-2.5-vl',
-        usingTempKey: !!tempApiKey
-      })
+      headers,
+      body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error('Error processing document:', error.message);
-    
+    console.error('Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Internal Server Error', 
-        message: error.message,
-        dataSource: 'error'
-      })
+      headers,
+      body: JSON.stringify({ error: error.message })
     };
   }
 }; 

@@ -10,14 +10,8 @@
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            color: #333;
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
         }
         .container {
             background-color: #f9f9f9;
@@ -25,30 +19,11 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .upload-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 2px dashed #ccc;
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            text-align: center;
-        }
-        .upload-section:hover {
-            border-color: #2980b9;
-        }
-        .file-list {
-            margin: 20px 0;
-        }
-        .file-item {
-            background-color: #e8f4fc;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .remove-file {
-            color: #e74c3c;
-            cursor: pointer;
         }
         button {
             background-color: #2980b9;
@@ -57,758 +32,242 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            margin: 10px 0;
         }
         button:hover {
             background-color: #3498db;
         }
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-        .results-section {
-            margin-top: 30px;
+        #response {
+            white-space: pre-wrap;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
             display: none;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .error {
+            color: #e74c3c;
+            margin: 10px 0;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
+        .success {
+            color: #27ae60;
+            margin: 10px 0;
         }
         .loading {
             display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #2980b9;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .model-selection {
-            margin: 20px 0;
-        }
-        .error-message {
-            color: #e74c3c;
+            color: #3498db;
             margin: 10px 0;
-            display: none;
-        }
-        .success-message {
-            color: #27ae60;
-            margin: 10px 0;
-            display: none;
-        }
-        .api-status {
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-            background-color: #f8f9fa;
-        }
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-            display: inline-block;
-        }
-        .api-status.simulated .status-indicator {
-            background-color: #f39c12; /* Orange for simulated */
-        }
-        .api-status.api-success .status-indicator {
-            background-color: #2ecc71; /* Green for API success */
-        }
-        .api-status.api-error .status-indicator {
-            background-color: #e74c3c; /* Red for API error */
-        }
-        .debug-section {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            display: none;
-        }
-        .debug-log {
-            font-family: monospace;
-            background-color: #2c3e50;
-            color: #ecf0f1;
-            padding: 10px;
-            border-radius: 3px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 10px;
-        }
-        .debug-toggle {
-            display: flex;
-            align-items: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #7f8c8d;
-        }
-        .debug-toggle input {
-            margin-right: 5px;
-        }
-        .api-key-test {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border: 1px dashed #e74c3c;
-            display: none;
-        }
-        .api-key-test input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .api-key-test button {
-            background-color: #e74c3c;
-        }
-        .api-key-test button:hover {
-            background-color: #c0392b;
-        }
-        .api-key-input {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border: 1px solid #3498db;
-        }
-        .api-key-input input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .api-key-input p {
-            margin-bottom: 5px;
-            color: #2c3e50;
         }
     </style>
 </head>
 <body>
-    <h1>Medical Document Extraction</h1>
-    
     <div class="container">
-        <div class="model-selection">
-            <h2>Select Model</h2>
-            <select id="model-select" style="padding: 8px; width: 300px;">
-                <option value="qwen-2.5-vl">Qwen 2.5 VL 72B (Recommended for images/documents)</option>
+        <h1>Venice.ai API Test</h1>
+        
+        <!-- API Key Section -->
+        <div class="section">
+            <h2>API Key</h2>
+            <select id="apiKeySelect" style="margin-bottom: 10px;">
+                <option value="LB6aPLu3J8DPuVBjWZQsyDUPx0eq0NJIDzIW2_CRLm">API Key 1</option>
+                <option value="IwfSe0sFYo6RSxKAzraN0C7NSqFL7OrJuh6TzNh9Me">API Key 2</option>
+            </select>
+            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key">
+            <button onclick="updateApiKey()">Update API Key</button>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <!-- Model Selection -->
+        <div class="section">
+            <h2>Model Selection</h2>
+            <select id="modelSelect">
+                <option value="qwen-2.5-vl">Qwen 2.5 VL 72B (Recommended)</option>
                 <option value="llama-3.3-70b">Llama 3.3 70B</option>
                 <option value="llama-3.2-3b">Llama 3.2 3B</option>
                 <option value="dolphin-2.9.2-qwen2-72b">Dolphin 2.9.2 Qwen2 72B</option>
-                <option value="llama-3.1-405b">Llama 3.1 405B</option>
-                <option value="qwen-2.5-coder-32b">Qwen 2.5 Coder 32B</option>
-                <option value="deepseek-r1-llama-70b">DeepSeek R1 Llama 70B</option>
-                <option value="deepseek-r1-671b">DeepSeek R1 671B</option>
             </select>
+            <button onclick="listModels()">List Available Models</button>
+            <div id="modelList"></div>
         </div>
-        
-        <div class="api-key-input" id="api-key-input">
-            <h2>Venice.ai API Key</h2>
-            <p>Enter your Venice.ai API key to process documents. This key is only used for processing and is not stored.</p>
-            <input type="password" id="api-key" placeholder="Enter your Venice.ai API key" value="LB6aPLu3J8DPuVBjWZQsyDUPx0eq0NJIDzIW2_CRLm">
-            <button id="test-key-button" style="margin-top: 10px; background-color: #27ae60;">Test API Key</button>
-            <div id="api-key-status" style="margin-top: 10px;"></div>
+
+        <!-- File Upload -->
+        <div class="section">
+            <h2>Document Upload</h2>
+            <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx">
+            <button onclick="processDocument()">Process Document</button>
+            <div id="loading" class="loading">Processing document...</div>
         </div>
-        
-        <div class="upload-section">
-            <h2>Upload Medical Documents</h2>
-            <p>Upload up to 3 PDF or PowerPoint files for extraction</p>
-            <input type="file" id="file-input" accept=".pdf,.ppt,.pptx" multiple style="display: none;">
-            <button id="upload-button">Select Files</button>
-            <div class="file-list" id="file-list"></div>
-            <div class="error-message" id="upload-error"></div>
-        </div>
-        
-        <button id="process-button" disabled>Process Documents</button>
-        
-        <div class="loading" id="loading">
-            <p>Processing your documents. This may take a minute...</p>
-            <div class="spinner"></div>
-        </div>
-        
-        <div class="error-message" id="process-error"></div>
-        <div class="success-message" id="process-success"></div>
-        <div class="api-status" id="api-status">
-            <span class="status-indicator"></span>
-            <span class="status-text">Data source: </span>
-        </div>
-        
-        <div class="results-section" id="results-section">
-            <h2>Extracted Medical Information</h2>
-            <button id="download-csv">Download as CSV</button>
-            <table id="results-table">
-                <thead>
-                    <tr>
-                        <th>Document</th>
-                        <th>Page/Slide</th>
-                        <th>Title</th>
-                        <th>Summary</th>
-                        <th>Medical Terms</th>
-                        <th>Diagnoses</th>
-                        <th>Treatments</th>
-                    </tr>
-                </thead>
-                <tbody id="results-body">
-                    <!-- Results will be inserted here -->
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="debug-toggle">
-            <input type="checkbox" id="debug-toggle">
-            <label for="debug-toggle">Enable Debug Mode</label>
-        </div>
-        
-        <div class="debug-section" id="debug-section">
-            <h3>Debug Information</h3>
-            <p>API Request/Response Details:</p>
-            <div class="debug-log" id="debug-log"></div>
-            
-            <div class="api-key-test" id="api-key-test">
-                <h4>Temporary API Key Test</h4>
-                <p><strong>Warning:</strong> This is only for testing. The key will not be stored permanently.</p>
-                <input type="password" id="test-api-key" placeholder="Enter Venice.ai API Key for testing">
-                <button id="test-api-button">Test API Connection</button>
-                <div id="test-api-result" style="margin-top: 10px;"></div>
-            </div>
+
+        <!-- Results -->
+        <div class="section">
+            <h2>Results</h2>
+            <div id="response"></div>
         </div>
     </div>
 
     <script>
-        // DOM elements
-        const fileInput = document.getElementById('file-input');
-        const uploadButton = document.getElementById('upload-button');
-        const fileList = document.getElementById('file-list');
-        const processButton = document.getElementById('process-button');
-        const loadingElement = document.getElementById('loading');
-        const resultsSection = document.getElementById('results-section');
-        const resultsTable = document.getElementById('results-table');
-        const resultsBody = document.getElementById('results-body');
-        const downloadCsvButton = document.getElementById('download-csv');
-        const uploadError = document.getElementById('upload-error');
-        const processError = document.getElementById('process-error');
-        const processSuccess = document.getElementById('process-success');
-        const modelSelect = document.getElementById('model-select');
-        const apiStatus = document.getElementById('api-status');
-        const debugToggle = document.getElementById('debug-toggle');
-        const debugSection = document.getElementById('debug-section');
-        const debugLog = document.getElementById('debug-log');
-        const apiKeyTest = document.getElementById('api-key-test');
-        const testApiKey = document.getElementById('test-api-key');
-        const testApiButton = document.getElementById('test-api-button');
-        const testApiResult = document.getElementById('test-api-result');
-        const apiKeyInput = document.getElementById('api-key');
-        const testKeyButton = document.getElementById('test-key-button');
-        const apiKeyStatus = document.getElementById('api-key-status');
-        
-        // Initialize API status as hidden
-        apiStatus.style.display = 'none';
-        
-        // Debug mode toggle
-        debugToggle.addEventListener('change', function() {
-            debugSection.style.display = this.checked ? 'block' : 'none';
-            apiKeyTest.style.display = this.checked ? 'block' : 'none';
-            // Store preference in localStorage
-            localStorage.setItem('debugMode', this.checked);
+        const BASE_URL = '/.netlify/functions';
+
+        // Initialize API key from select
+        document.getElementById('apiKey').value = document.getElementById('apiKeySelect').value;
+
+        // Update API key when selection changes
+        document.getElementById('apiKeySelect').addEventListener('change', function() {
+            document.getElementById('apiKey').value = this.value;
         });
-        
-        // Check if debug mode was previously enabled
-        if (localStorage.getItem('debugMode') === 'true') {
-            debugToggle.checked = true;
-            debugSection.style.display = 'block';
-            apiKeyTest.style.display = 'block';
-        }
-        
-        // API Key test functionality
-        testApiButton.addEventListener('click', async function() {
-            const apiKey = testApiKey.value.trim();
-            if (!apiKey) {
-                testApiResult.innerHTML = '<span style="color: #e74c3c;">Please enter an API key</span>';
-                return;
+
+        // Update API key from input
+        function updateApiKey() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (apiKey) {
+                // Add new option if key doesn't exist
+                const select = document.getElementById('apiKeySelect');
+                let exists = false;
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === apiKey) {
+                        select.selectedIndex = i;
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    const option = new Option(`Custom API Key`, apiKey);
+                    select.add(option);
+                    select.selectedIndex = select.options.length - 1;
+                }
+                document.getElementById('connectionStatus').innerHTML = '<div class="success">API Key updated</div>';
             }
-            
-            testApiResult.innerHTML = '<span style="color: #3498db;">Testing API connection...</span>';
+        }
+
+        // Test API Connection
+        async function testConnection() {
+            const apiKey = document.getElementById('apiKey').value;
+            const status = document.getElementById('connectionStatus');
             
             try {
-                const response = await fetch('/api/test-connection', {
-                    method: 'POST',
+                const response = await fetch(`${BASE_URL}/models`, {
+                    method: 'GET',
                     headers: {
+                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ apiKey })
+                    }
                 });
                 
                 const data = await response.json();
                 
-                if (response.ok && data.success) {
-                    testApiResult.innerHTML = `<span style="color: #2ecc71;">✓ API connection successful! Models available: ${data.models ? data.models.length : 'Unknown'}</span>`;
-                    logDebug('API Test successful:', data);
+                if (response.ok) {
+                    status.innerHTML = '<div class="success">✓ Connection successful!</div>';
+                    console.log('Available models:', data);
                 } else {
-                    testApiResult.innerHTML = `<span style="color: #e74c3c;">✗ API connection failed: ${data.error || 'Unknown error'}</span>`;
-                    logDebug('API Test failed:', data);
+                    status.innerHTML = `<div class="error">✗ Connection failed: ${data.error || 'Unknown error'}</div>`;
                 }
             } catch (error) {
-                testApiResult.innerHTML = `<span style="color: #e74c3c;">✗ Error testing API: ${error.message}</span>`;
-                logDebug('API Test error:', error.message);
+                status.innerHTML = `<div class="error">✗ Error: ${error.message}</div>`;
             }
-            
-            // Clear the API key from the input field after testing
-            setTimeout(() => {
-                testApiKey.value = '';
-            }, 3000);
-        });
-        
-        // Test API key button
-        testKeyButton.addEventListener('click', async function() {
-            const apiKey = apiKeyInput.value.trim();
-            if (!apiKey) {
-                apiKeyStatus.innerHTML = '<span style="color: #e74c3c;">Please enter an API key</span>';
-                return;
-            }
-            
-            apiKeyStatus.innerHTML = '<span style="color: #3498db;">Testing API connection...</span>';
+        }
+
+        // List Available Models
+        async function listModels() {
+            const apiKey = document.getElementById('apiKey').value;
+            const modelList = document.getElementById('modelList');
             
             try {
-                const response = await fetch('/api/test-connection', {
-                    method: 'POST',
+                const response = await fetch(`${BASE_URL}/models`, {
+                    method: 'GET',
                     headers: {
+                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ apiKey })
+                    }
                 });
                 
                 const data = await response.json();
                 
-                if (response.ok && data.success) {
-                    apiKeyStatus.innerHTML = `<span style="color: #2ecc71;">✓ API connection successful! Models available: ${data.models ? data.models.length : 'Unknown'}</span>`;
-                    logDebug('API Key Test successful:', data);
+                if (response.ok) {
+                    const models = data.data || [];
+                    modelList.innerHTML = '<div class="success">Available Models:</div>' +
+                        models.map(model => `<div>${model.id}</div>`).join('');
                 } else {
-                    apiKeyStatus.innerHTML = `<span style="color: #e74c3c;">✗ API connection failed: ${data.error || 'Unknown error'}</span>`;
-                    logDebug('API Key Test failed:', data);
+                    modelList.innerHTML = `<div class="error">Error: ${data.error || 'Unknown error'}</div>`;
                 }
             } catch (error) {
-                apiKeyStatus.innerHTML = `<span style="color: #e74c3c;">✗ Error testing API: ${error.message}</span>`;
-                logDebug('API Key Test error:', error.message);
-            }
-        });
-        
-        // Function to log debug information
-        function logDebug(message, data) {
-            if (debugToggle.checked) {
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = document.createElement('div');
-                
-                if (typeof data === 'object') {
-                    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message}<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
-                } else {
-                    logEntry.innerHTML = `<strong>${timestamp}:</strong> ${message} ${data || ''}`;
-                }
-                
-                debugLog.appendChild(logEntry);
-                debugLog.scrollTop = debugLog.scrollHeight;
+                modelList.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
-        
-        // Store uploaded files
-        let uploadedFiles = [];
-        let extractedData = [];
-        
-        // Event listeners
-        uploadButton.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileUpload);
-        processButton.addEventListener('click', processDocuments);
-        downloadCsvButton.addEventListener('click', downloadCsv);
-        
-        // Handle file uploads
-        function handleFileUpload(event) {
-            const files = event.target.files;
-            uploadError.style.display = 'none';
+
+        // Process Document
+        async function processDocument() {
+            const apiKey = document.getElementById('apiKey').value;
+            const model = document.getElementById('modelSelect').value;
+            const file = document.getElementById('fileInput').files[0];
+            const response = document.getElementById('response');
+            const loading = document.getElementById('loading');
             
-            if (uploadedFiles.length + files.length > 3) {
-                uploadError.textContent = 'You can only upload up to 3 files.';
-                uploadError.style.display = 'block';
+            if (!file) {
+                alert('Please select a file first');
                 return;
             }
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileType = file.name.split('.').pop().toLowerCase();
-                
-                if (!['pdf', 'ppt', 'pptx'].includes(fileType)) {
-                    uploadError.textContent = 'Only PDF and PowerPoint files are supported.';
-                    uploadError.style.display = 'block';
-                    continue;
-                }
-                
-                uploadedFiles.push(file);
-                logDebug('File added:', file.name);
-                
-                // Create file item in the list
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <span>${file.name} (${formatFileSize(file.size)})</span>
-                    <span class="remove-file" data-index="${uploadedFiles.length - 1}">✕</span>
-                `;
-                fileList.appendChild(fileItem);
-            }
-            
-            // Add event listeners to remove buttons
-            document.querySelectorAll('.remove-file').forEach(button => {
-                button.addEventListener('click', removeFile);
-            });
-            
-            updateProcessButton();
-        }
-        
-        // Remove a file from the list
-        function removeFile(event) {
-            const index = parseInt(event.target.getAttribute('data-index'));
-            const removedFile = uploadedFiles[index];
-            uploadedFiles.splice(index, 1);
-            logDebug('File removed:', removedFile.name);
-            
-            // Rebuild the file list
-            fileList.innerHTML = '';
-            uploadedFiles.forEach((file, i) => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <span>${file.name} (${formatFileSize(file.size)})</span>
-                    <span class="remove-file" data-index="${i}">✕</span>
-                `;
-                fileList.appendChild(fileItem);
-            });
-            
-            // Re-add event listeners
-            document.querySelectorAll('.remove-file').forEach(button => {
-                button.addEventListener('click', removeFile);
-            });
-            
-            updateProcessButton();
-        }
-        
-        // Format file size
-        function formatFileSize(bytes) {
-            if (bytes < 1024) return bytes + ' bytes';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-            else return (bytes / 1048576).toFixed(1) + ' MB';
-        }
-        
-        // Update process button state
-        function updateProcessButton() {
-            processButton.disabled = uploadedFiles.length === 0;
-        }
-        
-        // Process documents using Netlify Function
-        async function processDocuments() {
-            loadingElement.style.display = 'block';
-            processError.style.display = 'none';
-            processSuccess.style.display = 'none';
-            apiStatus.style.display = 'none'; // Hide the status initially
-            
-            // Clear previous debug logs if in debug mode
-            if (debugToggle.checked) {
-                debugLog.innerHTML = '';
-                logDebug('Starting document processing');
-            }
-            
+
+            loading.style.display = 'block';
+            response.style.display = 'none';
+
             try {
-                extractedData = [];
-                
-                for (let i = 0; i < uploadedFiles.length; i++) {
-                    const file = uploadedFiles[i];
-                    logDebug(`Processing file ${i+1}/${uploadedFiles.length}:`, file.name);
-                    await processFile(file, i + 1);
-                }
-                
-                // Display results
-                displayResults();
-                loadingElement.style.display = 'none';
-                resultsSection.style.display = 'block';
-                processSuccess.textContent = 'Documents processed successfully!';
-                processSuccess.style.display = 'block';
-                logDebug('Document processing completed successfully');
-                
-            } catch (error) {
-                loadingElement.style.display = 'none';
-                processError.textContent = 'Error processing documents: ' + error.message;
-                processError.style.display = 'block';
-                logDebug('Error processing documents:', error.message);
-                console.error(error);
-            }
-        }
-        
-        // Process a single file
-        async function processFile(file, fileIndex) {
-            // Convert file to base64
-            const base64 = await fileToBase64(file);
-            const fileType = file.name.split('.').pop().toLowerCase();
-            logDebug(`File converted to base64, size: ${Math.round(base64.length / 1024)} KB`);
-            
-            // Simulate document segmentation (in a real app, you'd use a proper PDF/PPT parser)
-            // For this MVP, we'll simulate 3 pages/slides per document
-            for (let pageIndex = 1; pageIndex <= 3; pageIndex++) {
-                logDebug(`Processing ${fileType} - page/slide ${pageIndex}`);
-                
-                // Create a prompt for the LLM
-                const prompt = `
-                You are a medical document analysis expert. Extract the following information from this ${fileType.toUpperCase()} document (page/slide ${pageIndex}):
-                
-                1. Title: Extract the EXACT main title or heading of this page/slide. This is very important. Look for the largest text, text at the top of the slide, or text that appears to be a heading.
-                2. Summary: A brief 1-2 sentence summary of the key information
-                3. Medical Terms: List any specialized medical terminology (comma-separated)
-                4. Diagnoses: List any medical diagnoses mentioned (comma-separated)
-                5. Treatments: List any treatments or procedures mentioned (comma-separated)
-                
-                Format your response as JSON with these exact fields: title, summary, medicalTerms, diagnoses, treatments
-                
-                For this MVP simulation, please generate realistic medical document extraction results for page/slide ${pageIndex} of document ${fileIndex}.
-                `;
-                
-                // Call our Netlify Function
-                const result = await callNetlifyFunction(prompt, base64);
-                
-                // Parse the response
-                const extractedInfo = parseApiResponse(result);
-                logDebug(`Extracted info for page ${pageIndex}:`, extractedInfo);
-                
-                // Add to extracted data
-                extractedData.push({
-                    document: file.name,
-                    page: pageIndex,
-                    title: extractedInfo.title || 'N/A',
-                    summary: extractedInfo.summary || 'N/A',
-                    medicalTerms: extractedInfo.medicalTerms || 'N/A',
-                    diagnoses: extractedInfo.diagnoses || 'N/A',
-                    treatments: extractedInfo.treatments || 'N/A'
-                });
-            }
-        }
-        
-        // Call our Netlify Function
-        async function callNetlifyFunction(prompt, imageBase64) {
-            const model = modelSelect.value;
-            logDebug(`Calling API with model: ${model}`);
-            
-            // Get the API key from the input field
-            const apiKey = apiKeyInput.value.trim();
-            
-            try {
-                // Truncate base64 for logging to avoid overwhelming the console
-                const truncatedBase64 = imageBase64.substring(0, 100) + '... [truncated]';
-                logDebug('API Request:', { 
-                    prompt, 
-                    imageBase64: truncatedBase64,
-                    model,
-                    usingApiKey: !!apiKey
-                });
-                
-                const startTime = performance.now();
-                
-                const response = await fetch('/api/process-document', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt,
-                        imageBase64,
-                        model,
-                        tempApiKey: apiKey // Send the API key to the function
-                    })
-                });
-                
-                const endTime = performance.now();
-                const requestDuration = (endTime - startTime).toFixed(2);
-                logDebug(`API Response received in ${requestDuration}ms, Status: ${response.status}`);
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    logDebug('API Error:', errorData);
-                    throw new Error(errorData.error || 'Error calling API');
-                }
-                
-                const data = await response.json();
-                logDebug('API Response data:', {
-                    dataSource: data.dataSource,
-                    model: data.model,
-                    contentLength: data.content ? data.content.length : 0
-                });
-                
-                // Update status based on the data source from the API response
-                if (data.dataSource === 'api') {
-                    apiStatus.className = 'api-status api-success';
-                    apiStatus.querySelector('.status-text').textContent = `Data source: Venice.ai API (${data.model || 'unknown model'})`;
-                } else {
-                    apiStatus.className = 'api-status simulated';
-                    apiStatus.querySelector('.status-text').textContent = 'Data source: Simulated data';
-                }
-                apiStatus.style.display = 'flex';
-                
-                return data.content;
-            } catch (error) {
-                console.error('Error calling Netlify function:', error);
-                logDebug('Error calling Netlify function:', error.message);
-                
-                // Update status to show simulated data
-                apiStatus.className = 'api-status simulated';
-                apiStatus.querySelector('.status-text').textContent = 'Data source: Simulated data (API call failed)';
-                apiStatus.style.display = 'flex';
-                
-                // For development/demo purposes, fall back to simulated data if the function fails
-                logDebug('Falling back to simulated data');
-                return simulateMedicalDataExtraction(prompt);
-            }
-        }
-        
-        // Simulate medical data extraction (fallback for development/demo)
-        function simulateMedicalDataExtraction(prompt) {
-            // Extract page number from prompt
-            const pageMatch = prompt.match(/page\/slide (\d+) of document (\d+)/);
-            const page = pageMatch ? parseInt(pageMatch[1]) : 1;
-            const doc = pageMatch ? parseInt(pageMatch[2]) : 1;
-            
-            logDebug(`Generating simulated data for page ${page} of document ${doc}`);
-            
-            // Create different simulated data based on page number
-            const simulatedData = [
-                {
-                    title: "Gastrointestinal Malignancies: Overview and Epidemiology",
-                    summary: "Introduction to common GI tract cancers and their prevalence in different populations.",
-                    medicalTerms: "adenocarcinoma, squamous cell carcinoma, neoplasm, metastasis, oncogenesis",
-                    diagnoses: "colorectal cancer, gastric cancer, esophageal cancer, pancreatic cancer",
-                    treatments: "surgical resection, chemotherapy, radiation therapy, immunotherapy"
-                },
-                {
-                    title: "Colorectal Cancer: Screening and Early Detection",
-                    summary: "Current guidelines for colorectal cancer screening methods and their effectiveness in reducing mortality.",
-                    medicalTerms: "colonoscopy, fecal occult blood test, polyp, adenoma, carcinoembryonic antigen",
-                    diagnoses: "adenomatous polyps, stage I-IV colorectal carcinoma, Lynch syndrome",
-                    treatments: "polypectomy, colectomy, FOLFOX regimen, targeted therapy"
-                },
-                {
-                    title: "Advanced Treatment Modalities for GI Malignancies",
-                    summary: "Novel therapeutic approaches for managing advanced and metastatic gastrointestinal cancers.",
-                    medicalTerms: "targeted therapy, checkpoint inhibitors, neoadjuvant, adjuvant, palliation",
-                    diagnoses: "metastatic colorectal cancer, advanced gastric cancer, pancreatic adenocarcinoma",
-                    treatments: "EGFR inhibitors, anti-VEGF therapy, immunotherapy, palliative care"
-                }
-            ];
-            
-            // Vary by document
-            const docOffset = (doc - 1) * 3;
-            const index = (page - 1 + docOffset) % simulatedData.length;
-            
-            return JSON.stringify(simulatedData[index]);
-        }
-        
-        // Parse API response
-        function parseApiResponse(response) {
-            try {
-                return JSON.parse(response);
-            } catch (error) {
-                console.error('Error parsing API response:', error);
-                logDebug('Error parsing API response:', error.message);
-                return {
-                    title: 'Error parsing response',
-                    summary: 'Could not extract information from this page/slide',
-                    medicalTerms: '',
-                    diagnoses: '',
-                    treatments: ''
-                };
-            }
-        }
-        
-        // Display results in the table
-        function displayResults() {
-            resultsBody.innerHTML = '';
-            
-            extractedData.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.document}</td>
-                    <td>${item.page}</td>
-                    <td>${item.title}</td>
-                    <td>${item.summary}</td>
-                    <td>${item.medicalTerms}</td>
-                    <td>${item.diagnoses}</td>
-                    <td>${item.treatments}</td>
-                `;
-                resultsBody.appendChild(row);
-            });
-        }
-        
-        // Convert file to base64
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
+                // Convert file to base64
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
-            });
-        }
-        
-        // Download results as CSV
-        function downloadCsv() {
-            if (extractedData.length === 0) return;
-            
-            const headers = ['Document', 'Page/Slide', 'Title', 'Summary', 'Medical Terms', 'Diagnoses', 'Treatments'];
-            
-            let csvContent = headers.join(',') + '\n';
-            
-            extractedData.forEach(item => {
-                const row = [
-                    `"${item.document.replace(/"/g, '""')}"`,
-                    item.page,
-                    `"${item.title.replace(/"/g, '""')}"`,
-                    `"${item.summary.replace(/"/g, '""')}"`,
-                    `"${item.medicalTerms.replace(/"/g, '""')}"`,
-                    `"${item.diagnoses.replace(/"/g, '""')}"`,
-                    `"${item.treatments.replace(/"/g, '""')}"`
-                ];
-                csvContent += row.join(',') + '\n';
-            });
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'medical_extraction_results.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            logDebug('CSV downloaded with', extractedData.length + ' rows');
+                
+                reader.onload = async () => {
+                    const base64File = reader.result.split(',')[1];
+                    
+                    // Send to Netlify function
+                    const functionResponse = await fetch(`${BASE_URL}/process-document`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            file: base64File,
+                            apiKey: apiKey,
+                            model: model
+                        })
+                    });
+
+                    const data = await functionResponse.json();
+                    
+                    loading.style.display = 'none';
+                    response.style.display = 'block';
+                    
+                    if (functionResponse.ok) {
+                        const content = data.choices[0].message.content;
+                        try {
+                            // Try to parse and format as JSON
+                            const parsed = JSON.parse(content);
+                            response.innerHTML = '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                        } catch {
+                            // If not valid JSON, show as is
+                            response.textContent = content;
+                        }
+                    } else {
+                        response.innerHTML = `<div class="error">Error: ${JSON.stringify(data, null, 2)}</div>`;
+                    }
+                };
+
+                reader.onerror = (error) => {
+                    loading.style.display = 'none';
+                    response.style.display = 'block';
+                    response.innerHTML = `<div class="error">Error reading file: ${error}</div>`;
+                };
+            } catch (error) {
+                loading.style.display = 'none';
+                response.style.display = 'block';
+                response.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Full error:', error);
+            }
         }
     </script>
 </body>
