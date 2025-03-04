@@ -14,6 +14,7 @@
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
+            text-size-adjust: 100%;
         }
         .container {
             background-color: #f9f9f9;
@@ -34,6 +35,7 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            margin: 5px;
         }
         button:hover {
             background-color: #3498db;
@@ -44,6 +46,11 @@
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
         #response {
             white-space: pre-wrap;
@@ -75,51 +82,55 @@
         <!-- Google Docs Integration -->
         <div class="section">
             <h2>Google Docs Integration</h2>
-            <button id="authorizeButton" onclick="handleAuthClick()">Sign In with Google</button>
-            <button id="signoutButton" onclick="handleSignoutClick()" style="display: none;">Sign Out</button>
-            <button id="pickFile" onclick="showPicker()" style="display: none;">Select from Google Drive</button>
-            <div id="googleStatus"></div>
+            <button id="authorizeButton" onclick="handleAuthClick()" aria-label="Sign in with Google">Sign In with Google</button>
+            <button id="signoutButton" onclick="handleSignoutClick()" style="display: none;" aria-label="Sign out">Sign Out</button>
+            <button id="pickFile" onclick="showPicker()" style="display: none;" aria-label="Select file from Google Drive">Select from Google Drive</button>
+            <div id="googleStatus" role="status"></div>
         </div>
 
         <!-- API Key Section -->
         <div class="section">
             <h2>API Key</h2>
-            <select id="apiKeySelect" style="margin-bottom: 10px;">
+            <label for="apiKeySelect">Select API Key</label>
+            <select id="apiKeySelect" style="margin-bottom: 10px;" aria-label="Select API Key">
                 <option value="LB6aPLu3J8DPuVBjWZQsyDUPx0eq0NJIDzIW2_CRLm">API Key 1</option>
                 <option value="IwfSe0sFYo6RSxKAzraN0C7NSqFL7OrJuh6TzNh9Me">API Key 2</option>
             </select>
-            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key">
-            <button onclick="updateApiKey()">Update API Key</button>
-            <button onclick="testConnection()">Test Connection</button>
-            <div id="connectionStatus"></div>
+            <label for="apiKey">Custom API Key</label>
+            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key" aria-label="Enter custom API key">
+            <button onclick="updateApiKey()" aria-label="Update API Key">Update API Key</button>
+            <button onclick="testConnection()" aria-label="Test API Connection">Test Connection</button>
+            <div id="connectionStatus" role="status"></div>
         </div>
 
         <!-- Model Selection -->
         <div class="section">
             <h2>Model Selection</h2>
-            <select id="modelSelect">
+            <label for="modelSelect">Select Model</label>
+            <select id="modelSelect" aria-label="Select AI Model">
                 <option value="qwen-2.5-vl">Qwen 2.5 VL 72B (Recommended)</option>
                 <option value="llama-3.3-70b">Llama 3.3 70B</option>
                 <option value="llama-3.2-3b">Llama 3.2 3B</option>
                 <option value="dolphin-2.9.2-qwen2-72b">Dolphin 2.9.2 Qwen2 72B</option>
             </select>
-            <button onclick="listModels()">List Available Models</button>
-            <div id="modelList"></div>
+            <button onclick="listModels()" aria-label="List Available Models">List Available Models</button>
+            <div id="modelList" role="status"></div>
         </div>
 
         <!-- File Upload -->
         <div class="section">
             <h2>Document Upload</h2>
-            <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx">
-            <button onclick="processDocument()">Process Document</button>
-            <div id="loading" class="loading">Processing document...</div>
-            <div id="progress" style="margin-top: 10px; color: #3498db;"></div>
+            <label for="fileInput">Select Document</label>
+            <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx" aria-label="Select document to upload">
+            <button onclick="processDocument()" aria-label="Process Selected Document">Process Document</button>
+            <div id="loading" class="loading" role="status">Processing document...</div>
+            <div id="progress" style="margin-top: 10px; color: #3498db;" role="status"></div>
         </div>
 
         <!-- Results -->
         <div class="section">
             <h2>Results</h2>
-            <div id="response"></div>
+            <div id="response" role="status"></div>
         </div>
     </div>
 
