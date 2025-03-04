@@ -102,6 +102,7 @@
             <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx">
             <button onclick="processDocument()">Process Document</button>
             <div id="loading" class="loading">Processing document...</div>
+            <div id="progress" style="margin-top: 10px; color: #3498db;"></div>
         </div>
 
         <!-- Results -->
@@ -207,6 +208,7 @@
             const file = document.getElementById('fileInput').files[0];
             const response = document.getElementById('response');
             const loading = document.getElementById('loading');
+            const progress = document.getElementById('progress');
             
             if (!file) {
                 alert('Please select a file first');
@@ -214,14 +216,15 @@
             }
 
             // Check file size
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                alert('File size must be less than 10MB');
+            if (file.size > 25 * 1024 * 1024) { // 25MB limit
+                alert('File size must be less than 25MB');
                 return;
             }
 
             loading.style.display = 'block';
             response.style.display = 'none';
             response.innerHTML = '';
+            progress.textContent = 'Reading file...';
 
             try {
                 // Convert file to base64
@@ -231,10 +234,10 @@
                 reader.onload = async () => {
                     try {
                         const base64File = reader.result.split(',')[1];
-                        console.log('File converted to base64, size:', Math.round(base64File.length / 1024), 'KB');
+                        progress.textContent = `File loaded (${Math.round(base64File.length / 1024)} KB). Processing...`;
                         
                         // Send to Netlify function
-                        console.log('Sending request to process-document function...');
+                        progress.textContent = 'Analyzing document with AI...';
                         const functionResponse = await fetch(`${BASE_URL}/process-document`, {
                             method: 'POST',
                             headers: {
@@ -254,6 +257,7 @@
                         
                         loading.style.display = 'none';
                         response.style.display = 'block';
+                        progress.textContent = '';
                         
                         if (functionResponse.ok) {
                             const content = data.choices[0].message.content;
@@ -272,6 +276,7 @@
                     } catch (error) {
                         loading.style.display = 'none';
                         response.style.display = 'block';
+                        progress.textContent = '';
                         response.innerHTML = `<div class="error">Error processing document: ${error.message}</div>`;
                         console.error('Processing error:', error);
                     }
@@ -280,12 +285,14 @@
                 reader.onerror = (error) => {
                     loading.style.display = 'none';
                     response.style.display = 'block';
+                    progress.textContent = '';
                     response.innerHTML = `<div class="error">Error reading file: ${error}</div>`;
                     console.error('File reading error:', error);
                 };
             } catch (error) {
                 loading.style.display = 'none';
                 response.style.display = 'block';
+                progress.textContent = '';
                 response.innerHTML = `<div class="error">Error: ${error.message}</div>`;
                 console.error('General error:', error);
             }
