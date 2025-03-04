@@ -2,70 +2,40 @@
 const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
 
   try {
-    // Parse the request body
-    const requestBody = JSON.parse(event.body);
-    const { apiKey } = requestBody;
-    
-    if (!apiKey) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'API key is required' })
-      };
-    }
+    const { apiKey } = JSON.parse(event.body);
 
-    // Test the API connection by making a simple request to Venice.ai
-    const veniceApiUrl = 'https://api.venice.ai/api/v1/models';
-    
-    const response = await fetch(veniceApiUrl, {
+    const response = await fetch('https://api.venice.ai/api/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       }
     });
 
-    // Parse the response
     const data = await response.json();
 
-    // Check for errors
-    if (!response.ok) {
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ 
-          success: false,
-          error: 'Error connecting to Venice.ai API', 
-          details: data 
-        })
-      };
-    }
-
-    // Return success with available models
     return {
-      statusCode: 200,
-      body: JSON.stringify({ 
-        success: true,
-        message: 'Successfully connected to Venice.ai API',
-        models: data.data || []
-      })
+      statusCode: response.ok ? 200 : response.status,
+      headers,
+      body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error('Error testing API connection:', error);
-    
+    console.error('Function error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        success: false,
-        error: 'Internal Server Error', 
-        message: error.message 
-      })
+      headers,
+      body: JSON.stringify({ error: error.message })
     };
   }
 }; 

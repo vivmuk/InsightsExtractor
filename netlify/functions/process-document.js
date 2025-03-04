@@ -28,22 +28,36 @@ exports.handler = async function(event, context) {
 
     const { file, apiKey, model } = JSON.parse(event.body);
 
-    // First, upload the file to Venice.ai
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(file, 'base64');
+
+    // Create FormData and append file
+    const formData = new FormData();
+    formData.append('file', fileBuffer, {
+      filename: 'document.pdf',
+      contentType: 'application/pdf'
+    });
+
+    // Upload file to Venice.ai
     const fileUploadResponse = await fetch('https://api.venice.ai/api/v1/files', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        ...formData.getHeaders()
       },
-      body: file
+      body: formData
     });
 
     if (!fileUploadResponse.ok) {
-      throw new Error('File upload failed: ' + await fileUploadResponse.text());
+      const errorText = await fileUploadResponse.text();
+      console.error('File upload error:', errorText);
+      throw new Error(`File upload failed: ${errorText}`);
     }
 
-    const { id: fileId } = await fileUploadResponse.json();
+    const uploadData = await fileUploadResponse.json();
+    console.log('File upload successful:', uploadData);
 
-    // Create the chat completion request
+    // Create chat completion request
     const payload = {
       model: model,
       messages: [
@@ -63,7 +77,7 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
             },
             {
               type: "file",
-              file_id: fileId
+              file_id: uploadData.id
             }
           ]
         }
@@ -72,7 +86,8 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
       max_tokens: 2000
     };
 
-    // Make the chat completion API call
+    console.log('Sending chat completion request:', payload);
+
     const completionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -83,10 +98,13 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
     });
 
     if (!completionResponse.ok) {
-      throw new Error('Chat completion failed: ' + await completionResponse.text());
+      const errorText = await completionResponse.text();
+      console.error('Chat completion error:', errorText);
+      throw new Error(`Chat completion failed: ${errorText}`);
     }
 
     const result = await completionResponse.json();
+    console.log('Chat completion successful');
 
     return {
       statusCode: 200,
@@ -94,7 +112,7 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
       body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Function error:', error);
     return {
       statusCode: 500,
       headers,
