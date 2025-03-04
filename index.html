@@ -213,8 +213,15 @@
                 return;
             }
 
+            // Check file size
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert('File size must be less than 10MB');
+                return;
+            }
+
             loading.style.display = 'block';
             response.style.display = 'none';
+            response.innerHTML = '';
 
             try {
                 // Convert file to base64
@@ -222,42 +229,51 @@
                 reader.readAsDataURL(file);
                 
                 reader.onload = async () => {
-                    const base64File = reader.result.split(',')[1];
-                    console.log('File converted to base64');
-                    
-                    // Send to Netlify function
-                    const functionResponse = await fetch(`${BASE_URL}/process-document`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            file: base64File,
-                            apiKey: apiKey,
-                            model: model,
-                            filename: file.name
-                        })
-                    });
+                    try {
+                        const base64File = reader.result.split(',')[1];
+                        console.log('File converted to base64, size:', Math.round(base64File.length / 1024), 'KB');
+                        
+                        // Send to Netlify function
+                        console.log('Sending request to process-document function...');
+                        const functionResponse = await fetch(`${BASE_URL}/process-document`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                file: base64File,
+                                apiKey: apiKey,
+                                model: model,
+                                filename: file.name
+                            })
+                        });
 
-                    console.log('Function response status:', functionResponse.status);
-                    const data = await functionResponse.json();
-                    console.log('Function response:', data);
-                    
-                    loading.style.display = 'none';
-                    response.style.display = 'block';
-                    
-                    if (functionResponse.ok) {
-                        const content = data.choices[0].message.content;
-                        try {
-                            // Try to parse and format as JSON
-                            const parsed = JSON.parse(content);
-                            response.innerHTML = '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
-                        } catch {
-                            // If not valid JSON, show as is
-                            response.textContent = content;
+                        console.log('Function response status:', functionResponse.status);
+                        const data = await functionResponse.json();
+                        console.log('Function response:', data);
+                        
+                        loading.style.display = 'none';
+                        response.style.display = 'block';
+                        
+                        if (functionResponse.ok) {
+                            const content = data.choices[0].message.content;
+                            try {
+                                // Try to parse and format as JSON
+                                const parsed = JSON.parse(content);
+                                response.innerHTML = '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
+                            } catch {
+                                // If not valid JSON, show as is
+                                response.textContent = content;
+                            }
+                        } else {
+                            response.innerHTML = `<div class="error">Error: ${JSON.stringify(data, null, 2)}</div>`;
+                            console.error('Error details:', data);
                         }
-                    } else {
-                        response.innerHTML = `<div class="error">Error: ${JSON.stringify(data, null, 2)}</div>`;
+                    } catch (error) {
+                        loading.style.display = 'none';
+                        response.style.display = 'block';
+                        response.innerHTML = `<div class="error">Error processing document: ${error.message}</div>`;
+                        console.error('Processing error:', error);
                     }
                 };
 
@@ -265,12 +281,13 @@
                     loading.style.display = 'none';
                     response.style.display = 'block';
                     response.innerHTML = `<div class="error">Error reading file: ${error}</div>`;
+                    console.error('File reading error:', error);
                 };
             } catch (error) {
                 loading.style.display = 'none';
                 response.style.display = 'block';
                 response.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-                console.error('Full error:', error);
+                console.error('General error:', error);
             }
         }
     </script>
