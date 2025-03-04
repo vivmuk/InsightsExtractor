@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Document Extraction</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -70,6 +72,15 @@
     <div class="container">
         <h1>Venice.ai API Test</h1>
         
+        <!-- Google Docs Integration -->
+        <div class="section">
+            <h2>Google Docs Integration</h2>
+            <button id="authorizeButton" onclick="handleAuthClick()">Sign In with Google</button>
+            <button id="signoutButton" onclick="handleSignoutClick()" style="display: none;">Sign Out</button>
+            <button id="pickFile" onclick="showPicker()" style="display: none;">Select from Google Drive</button>
+            <div id="googleStatus"></div>
+        </div>
+
         <!-- API Key Section -->
         <div class="section">
             <h2>API Key</h2>
@@ -297,6 +308,132 @@
                 console.error('General error:', error);
             }
         }
+
+        // Google API Configuration
+        const CLIENT_ID = 'YOUR_CLIENT_ID';
+        const API_KEY = 'YOUR_API_KEY';
+        const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
+        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: DISCOVERY_DOCS,
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorizeButton').style.display = 'block';
+            }
+        }
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
+                }
+                document.getElementById('signoutButton').style.display = 'block';
+                document.getElementById('authorizeButton').style.display = 'none';
+                document.getElementById('pickFile').style.display = 'block';
+                document.getElementById('googleStatus').innerHTML = '<div class="success">Successfully signed in</div>';
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                document.getElementById('authorizeButton').style.display = 'block';
+                document.getElementById('signoutButton').style.display = 'none';
+                document.getElementById('pickFile').style.display = 'none';
+                document.getElementById('googleStatus').innerHTML = '<div class="success">Signed out</div>';
+            }
+        }
+
+        async function showPicker() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    'pageSize': 10,
+                    'fields': 'files(id, name, mimeType)',
+                    'q': "mimeType='application/pdf' or mimeType='application/vnd.google-apps.document'"
+                });
+
+                const files = response.result.files;
+                if (files && files.length > 0) {
+                    const file = files[0]; // For demo, just get the first file
+                    if (file.mimeType === 'application/vnd.google-apps.document') {
+                        // Export Google Doc as PDF
+                        const pdfResponse = await gapi.client.drive.files.export({
+                            fileId: file.id,
+                            mimeType: 'application/pdf'
+                        }, { responseType: 'arraybuffer' });
+                        
+                        const blob = new Blob([pdfResponse.body], { type: 'application/pdf' });
+                        const pdfFile = new File([blob], `${file.name}.pdf`, { type: 'application/pdf' });
+                        
+                        // Create a new FileList-like object
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(pdfFile);
+                        
+                        // Set the file input's files
+                        document.getElementById('fileInput').files = dataTransfer.files;
+                        document.getElementById('googleStatus').innerHTML = `<div class="success">Selected: ${file.name}</div>`;
+                    } else {
+                        // Handle PDF directly
+                        const pdfResponse = await gapi.client.drive.files.get({
+                            fileId: file.id,
+                            alt: 'media'
+                        }, { responseType: 'arraybuffer' });
+                        
+                        const blob = new Blob([pdfResponse.body], { type: 'application/pdf' });
+                        const pdfFile = new File([blob], file.name, { type: 'application/pdf' });
+                        
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(pdfFile);
+                        
+                        document.getElementById('fileInput').files = dataTransfer.files;
+                        document.getElementById('googleStatus').innerHTML = `<div class="success">Selected: ${file.name}</div>`;
+                    }
+                } else {
+                    document.getElementById('googleStatus').innerHTML = '<div class="error">No files found.</div>';
+                }
+            } catch (err) {
+                document.getElementById('googleStatus').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+                console.error('Error loading files:', err);
+            }
+        }
+
+        // Load the Google API
+        document.write('<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"><\/script>');
+        document.write('<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"><\/script>');
     </script>
 </body>
 </html> 

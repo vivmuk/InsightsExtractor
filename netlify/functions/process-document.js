@@ -34,62 +34,47 @@ exports.handler = async function(event, context) {
       throw new Error('Missing required parameters: file, apiKey, or model');
     }
 
-    // Create chat completion request
-    const payload = {
-      model: model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Please analyze this document and extract the following information:
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(file, 'base64');
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', fileBuffer, {
+      filename: filename || 'document.pdf',
+      contentType: 'application/pdf'
+    });
+    formData.append('model', model);
+    formData.append('prompt', `Please analyze this document and extract the following information:
 1. Title: The main heading or title
 2. Summary: A brief overview
 3. Medical Terms: Any specialized medical terminology
 4. Diagnoses: Any medical diagnoses mentioned
 5. Treatments: Any treatments or procedures mentioned
 
-Format the response as JSON with these fields: title, summary, medicalTerms, diagnoses, treatments`
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${file}`
-              }
-            }
-          ]
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 2000
-    };
+Format the response as JSON with these fields: title, summary, medicalTerms, diagnoses, treatments`);
 
-    console.log('Sending chat completion request...');
-    const completionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+    console.log('Sending request to Venice.ai...');
+    const response = await fetch('https://api.venice.ai/api/v1/documents/process', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        ...formData.getHeaders()
       },
-      body: JSON.stringify(payload)
+      body: formData
     });
 
-    console.log('Chat completion response status:', completionResponse.status);
-    const completionResponseText = await completionResponse.text();
-    console.log('Chat completion response:', completionResponseText);
+    console.log('Response status:', response.status);
+    const responseText = await response.text();
+    console.log('Response:', responseText);
 
-    if (!completionResponse.ok) {
-      throw new Error(`Chat completion failed (${completionResponse.status}): ${completionResponseText}`);
+    if (!response.ok) {
+      throw new Error(`Document processing failed (${response.status}): ${responseText}`);
     }
-
-    const result = JSON.parse(completionResponseText);
-    console.log('Chat completion successful');
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(result)
+      body: responseText
     };
   } catch (error) {
     console.error('Function error:', error);
