@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Data Extractor</title>
+    <title>PowerPoint Slide Extractor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,6 +58,10 @@
             color: #27ae60;
             margin: 10px 0;
         }
+        .warning {
+            color: #f39c12;
+            margin: 10px 0;
+        }
         .loading {
             display: none;
             color: #3498db;
@@ -71,63 +75,86 @@
             border-radius: 4px;
             margin-top: 10px;
             display: none;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .field-config {
-            margin-bottom: 10px;
+        .step {
+            display: none;
+            margin: 5px 0;
             padding: 5px;
-            background-color: #fff;
+            border-left: 3px solid #3498db;
+            padding-left: 10px;
+        }
+        .model-info {
+            background-color: #eaf2f8;
+            padding: 10px;
             border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            display: none;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PDF Data Extractor</h1>
+        <h1>PowerPoint Slide Extractor</h1>
         
-        <!-- API Configuration -->
-        <div class="section">
-            <h2>API Configuration</h2>
-            <label for="apiKey">Venice.ai API Key</label>
-            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key" aria-label="Enter API key">
-            <button onclick="testConnection()" aria-label="Test API Connection">Test Connection</button>
-            <div id="connectionStatus" role="status"></div>
+        <!-- Model Information -->
+        <div class="model-info">
+            <strong>Model:</strong> Qwen 2.5 VL 72B (via Venice.ai)<br>
+            <strong>API Key:</strong> Using pre-configured key for testing<br>
+            <strong>Extraction:</strong> Slide #, Title, and Comprehensive Summary for each slide
         </div>
-
-        <!-- Field Configuration -->
-        <div class="section">
-            <h2>Field Configuration</h2>
-            <div id="fieldList">
-                <div class="field-config">
-                    <label>Field 1:</label>
-                    <input type="text" class="field-name" value="Title" placeholder="Field name">
-                </div>
-                <div class="field-config">
-                    <label>Field 2:</label>
-                    <input type="text" class="field-name" value="Date" placeholder="Field name">
-                </div>
-                <div class="field-config">
-                    <label>Field 3:</label>
-                    <input type="text" class="field-name" value="Content" placeholder="Field name">
-                </div>
-            </div>
-            <button onclick="addField()" aria-label="Add Field">Add Field</button>
-            <button onclick="removeField()" aria-label="Remove Field">Remove Field</button>
-        </div>
-
+        
         <!-- File Upload -->
         <div class="section">
-            <h2>Document Upload</h2>
-            <label for="fileInput">Select PDF Document</label>
-            <input type="file" id="fileInput" accept=".pdf" aria-label="Select PDF to upload">
-            <button onclick="processDocument()" aria-label="Process PDF">Process Document</button>
-            <div id="loading" class="loading" role="status">Processing document...</div>
+            <h2>Presentation Upload</h2>
+            <label for="fileInput">Select PowerPoint Presentation</label>
+            <input type="file" id="fileInput" accept=".ppt,.pptx,.pdf" aria-label="Select PowerPoint to upload">
+            <button onclick="testConnection()" aria-label="Test API Connection">Test Connection</button>
+            <button onclick="processDocument()" aria-label="Process Presentation">Process Presentation</button>
+            <div id="connectionStatus" role="status"></div>
+            <div id="loading" class="loading" role="status">Processing presentation...</div>
+            <div id="step1" class="step">Analyzing slides and extracting content...</div>
             <div id="progress" role="status"></div>
         </div>
 
         <!-- Results -->
         <div class="section">
-            <h2>Results</h2>
+            <h2>Extracted Slide Information</h2>
+            <div id="note" class="warning" style="display: none;"></div>
             <div id="csvOutput" role="status"></div>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Slide #</th>
+                        <th>Title</th>
+                        <th>Summary</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
             <button id="downloadCsv" onclick="downloadCsv()" style="display: none;" aria-label="Download CSV">Download CSV</button>
         </div>
     </div>
@@ -135,28 +162,10 @@
     <script>
         let lastCsvData = null;
 
-        function addField() {
-            const fieldList = document.getElementById('fieldList');
-            const newField = document.createElement('div');
-            newField.className = 'field-config';
-            const fieldNumber = fieldList.children.length + 1;
-            newField.innerHTML = `
-                <label>Field ${fieldNumber}:</label>
-                <input type="text" class="field-name" placeholder="Field name">
-            `;
-            fieldList.appendChild(newField);
-        }
-
-        function removeField() {
-            const fieldList = document.getElementById('fieldList');
-            if (fieldList.children.length > 1) {
-                fieldList.removeChild(fieldList.lastChild);
-            }
-        }
-
         async function testConnection() {
-            const apiKey = document.getElementById('apiKey').value;
             const status = document.getElementById('connectionStatus');
+            
+            status.innerHTML = '<div class="loading">Testing connection...</div>';
             
             try {
                 const response = await fetch('/.netlify/functions/test-connection', {
@@ -164,7 +173,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ apiKey })
+                    body: JSON.stringify({})
                 });
 
                 const result = await response.json();
@@ -180,31 +189,29 @@
 
         async function processDocument() {
             const fileInput = document.getElementById('fileInput');
-            const apiKey = document.getElementById('apiKey').value;
             const loading = document.getElementById('loading');
+            const step1 = document.getElementById('step1');
             const progress = document.getElementById('progress');
             const csvOutput = document.getElementById('csvOutput');
             const downloadBtn = document.getElementById('downloadCsv');
+            const noteDiv = document.getElementById('note');
+            const resultsTable = document.getElementById('resultsTable');
+            const resultsBody = document.getElementById('resultsBody');
 
             if (!fileInput.files[0]) {
                 progress.innerHTML = '<div class="error">Please select a file</div>';
                 return;
             }
 
-            if (!apiKey) {
-                progress.innerHTML = '<div class="error">Please enter an API key</div>';
-                return;
-            }
-
-            // Get field configuration
-            const fields = Array.from(document.getElementsByClassName('field-name'))
-                .map(input => input.value)
-                .filter(value => value.trim() !== '');
-
+            // Reset UI
             loading.style.display = 'block';
+            step1.style.display = 'block';
             progress.innerHTML = '';
             csvOutput.style.display = 'none';
             downloadBtn.style.display = 'none';
+            noteDiv.style.display = 'none';
+            resultsTable.style.display = 'none';
+            resultsBody.innerHTML = '';
 
             try {
                 const file = fileInput.files[0];
@@ -213,6 +220,9 @@
                 reader.onload = async function(e) {
                     const base64Data = e.target.result.split(',')[1];
 
+                    // Show step 1
+                    step1.style.display = 'block';
+                    
                     const response = await fetch('/.netlify/functions/process-document', {
                         method: 'POST',
                         headers: {
@@ -220,21 +230,32 @@
                         },
                         body: JSON.stringify({
                             file: base64Data,
-                            apiKey: apiKey,
-                            fields: fields,
                             filename: file.name
                         })
                     });
 
                     const result = await response.json();
+                    
+                    // Hide loading and steps
                     loading.style.display = 'none';
+                    step1.style.display = 'none';
 
                     if (response.ok) {
                         lastCsvData = result.csvData;
                         csvOutput.textContent = result.csvData;
-                        csvOutput.style.display = 'block';
+                        csvOutput.style.display = 'none'; // Hide raw CSV
                         downloadBtn.style.display = 'block';
-                        progress.innerHTML = '<div class="success">Document processed successfully!</div>';
+                        progress.innerHTML = '<div class="success">Presentation processed successfully!</div>';
+                        
+                        // Display note if present
+                        if (result.note) {
+                            noteDiv.textContent = result.note;
+                            noteDiv.style.display = 'block';
+                        }
+                        
+                        // Parse CSV and populate table
+                        populateTable(result.csvData);
+                        resultsTable.style.display = 'table';
                     } else {
                         progress.innerHTML = `<div class="error">Error: ${result.error}</div>`;
                     }
@@ -243,7 +264,59 @@
                 reader.readAsDataURL(file);
             } catch (error) {
                 loading.style.display = 'none';
+                step1.style.display = 'none';
                 progress.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        function populateTable(csvData) {
+            const resultsBody = document.getElementById('resultsBody');
+            resultsBody.innerHTML = '';
+            
+            // Parse CSV
+            const lines = csvData.trim().split('\n');
+            const headers = lines[0].split(',');
+            
+            // Process each data row
+            for (let i = 1; i < lines.length; i++) {
+                // Handle commas within quoted strings
+                let row = [];
+                let inQuotes = false;
+                let currentValue = '';
+                
+                for (let char of lines[i]) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(currentValue);
+                        currentValue = '';
+                    } else {
+                        currentValue += char;
+                    }
+                }
+                
+                // Add the last value
+                row.push(currentValue);
+                
+                // Create table row
+                const tr = document.createElement('tr');
+                
+                // Add slide number
+                const tdSlideNum = document.createElement('td');
+                tdSlideNum.textContent = row[0].replace(/"/g, '');
+                tr.appendChild(tdSlideNum);
+                
+                // Add title
+                const tdTitle = document.createElement('td');
+                tdTitle.textContent = row[1].replace(/"/g, '');
+                tr.appendChild(tdTitle);
+                
+                // Add summary
+                const tdSummary = document.createElement('td');
+                tdSummary.textContent = row[2].replace(/"/g, '');
+                tr.appendChild(tdSummary);
+                
+                resultsBody.appendChild(tr);
             }
         }
 
@@ -254,7 +327,7 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'extracted_data.csv';
+            a.download = 'slide_extraction.csv';
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

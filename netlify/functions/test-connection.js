@@ -1,6 +1,9 @@
 // Netlify Function to test Venice.ai API connection
 const fetch = require('node-fetch');
 
+// Hard-coded API key for testing
+const VENICE_API_KEY = "n9jfLskZuDX9ecMPH2H6SfKLgCtHlIS6zjo4XAGY6l";
+
 exports.handler = async function(event, context) {
   // Enable CORS
   const headers = {
@@ -23,11 +26,8 @@ exports.handler = async function(event, context) {
       throw new Error('Only POST requests are allowed');
     }
 
-    const { apiKey } = JSON.parse(event.body);
-    
-    if (!apiKey) {
-      throw new Error('API key is required');
-    }
+    // Use the hard-coded API key instead of the one from the request
+    const apiKey = VENICE_API_KEY;
 
     // Test the connection by making a simple request
     const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
