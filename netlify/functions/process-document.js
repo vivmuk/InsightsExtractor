@@ -59,69 +59,38 @@ exports.handler = async function(event, context) {
       return [headers, ...rows].join('\n');
     };
 
-    // First, try to extract text from the PowerPoint using a text extraction API
-    console.log('Extracting content from PowerPoint...');
-    console.log('File type:', filename.split('.').pop());
-    
-    // Determine the correct MIME type based on file extension
-    let mimeType = 'application/pdf';
-    const fileExt = filename.split('.').pop().toLowerCase();
-    if (fileExt === 'ppt' || fileExt === 'pptx') {
-      mimeType = fileExt === 'ppt' ? 'application/vnd.ms-powerpoint' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-    }
-    console.log('Using MIME type:', mimeType);
-    
-    // Create the request payload for PowerPoint extraction
+    // Create the request payload for document extraction
     const extractionPayload = {
-      model: "qwen-2.5-vl",  // Using Qwen 2.5 VL 72B model from Venice.ai
+      model: "llama-3.3-70b",  // Using Llama 3.3 70B model as per documentation
       messages: [
         {
           role: "system",
-          content: "You are a document analyzer that extracts structured information from PowerPoint presentations. For each slide, extract the slide number, title, and a comprehensive summary of the content."
+          content: "You are a document analyzer that extracts structured information from documents and returns it in CSV format."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Please analyze this PowerPoint presentation. For each slide, extract the following information:\n1. Slide # (the slide number)\n2. Title (the main heading or title of the slide)\n3. Summary (a comprehensive summary of the slide content, including key points, data, and insights)\n\nFormat your response as CSV with these three columns: 'Slide #', 'Title', 'Summary'. Make sure to include all slides and provide detailed summaries."
+              text: "Extract the following information and return as CSV with headers:\n- Slide # (the slide number)\n- Title (the main heading or title of the slide)\n- Summary (a comprehensive summary of the slide content)\n\nReturn ONLY the CSV data with headers."
             },
             {
               type: "image_url",
               image_url: {
-                url: `data:${mimeType};base64,${file}`
+                url: `data:application/pdf;base64,${file}`
               }
             }
           ]
         }
       ],
-      temperature: 0.1,
-      max_tokens: 4000
+      venice_parameters: {
+        enable_web_search: "off"
+      }
     };
 
     console.log('Sending request to Venice.ai API...');
     console.log('API endpoint: https://api.venice.ai/api/v1/chat/completions');
     console.log('Using model:', extractionPayload.model);
-    
-    // Log a truncated version of the payload for debugging
-    const payloadForLogging = { ...extractionPayload };
-    if (payloadForLogging.messages && payloadForLogging.messages.length > 0) {
-      for (let i = 0; i < payloadForLogging.messages.length; i++) {
-        const message = payloadForLogging.messages[i];
-        if (message.content && Array.isArray(message.content)) {
-          for (let j = 0; j < message.content.length; j++) {
-            const content = message.content[j];
-            if (content.type === 'image_url' && content.image_url && content.image_url.url) {
-              // Truncate the base64 data for logging
-              const url = content.image_url.url;
-              const prefix = url.substring(0, url.indexOf(',') + 1);
-              content.image_url.url = prefix + '[BASE64_DATA_TRUNCATED]';
-            }
-          }
-        }
-      }
-    }
-    console.log('Request payload (truncated):', JSON.stringify(payloadForLogging, null, 2));
     
     // Make the extraction request
     const extractionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
@@ -142,7 +111,7 @@ exports.handler = async function(event, context) {
       
       if (extractionResult.choices && extractionResult.choices.length > 0 && extractionResult.choices[0].message) {
         const csvData = extractionResult.choices[0].message.content;
-        console.log('Successfully extracted content from PowerPoint');
+        console.log('Successfully extracted content');
         console.log('CSV data first 100 chars:', csvData.substring(0, 100));
         
         // Basic validation of CSV format

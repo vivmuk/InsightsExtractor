@@ -37,7 +37,7 @@ exports.handler = async function(event, context) {
     }
     
     console.log('API key length:', apiKey.length);
-    console.log('Using model: qwen-2.5-vl');
+    console.log('Using model: llama-3.3-70b');
 
     // Test the connection by making a simple request
     const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
@@ -47,14 +47,20 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "qwen-2.5-vl",
+        model: "llama-3.3-70b",
         messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant."
+          },
           {
             role: "user",
             content: "Test connection"
           }
         ],
-        max_tokens: 10
+        venice_parameters: {
+          enable_web_search: "off"
+        }
       })
     });
 
@@ -74,7 +80,7 @@ exports.handler = async function(event, context) {
       headers,
       body: JSON.stringify({
         message: 'Connection successful',
-        model: 'qwen-2.5-vl'
+        model: 'llama-3.3-70b'
       })
     };
   } catch (error) {
