@@ -26,39 +26,41 @@ exports.handler = async function(event, context) {
     }
 
     console.log('Processing request...');
-    const { file, apiKey, model, filename } = JSON.parse(event.body);
+    const { file, apiKey, fields, filename } = JSON.parse(event.body);
     
-    if (!file || !apiKey || !model) {
-      throw new Error('Missing required parameters: file, apiKey, or model');
+    if (!file || !apiKey || !fields) {
+      throw new Error('Missing required parameters: file, apiKey, or fields');
     }
 
+    // Create the field extraction prompt
+    const fieldPrompt = fields.map(field => `- ${field}`).join('\n');
+    
     // Create the request payload
     const payload = {
-      model: model,
+      model: "qwen-2.5-vl",
       messages: [
+        {
+          role: "system",
+          content: "You are a document analyzer that extracts structured information from PDFs and converts it to CSV format."
+        },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Please analyze this document and extract the following information:
-1. Title: The main heading or title
-2. Summary: A brief overview
-3. Medical Terms: Any specialized medical terminology
-4. Diagnoses: Any medical diagnoses mentioned
-5. Treatments: Any treatments or procedures mentioned
-
-Format the response as JSON with these fields: title, summary, medicalTerms, diagnoses, treatments`
+              text: `Please analyze this document and extract the following fields:\n${fieldPrompt}\n\nReturn ONLY the CSV data with a header row containing the field names. Each subsequent row should contain the extracted data for one section/page of the document.`
             },
             {
-              type: "file_url",
-              file_url: {
+              type: "image_url",
+              image_url: {
                 url: `data:application/pdf;base64,${file}`
               }
             }
           ]
         }
-      ]
+      ],
+      temperature: 0.3,
+      max_tokens: 2000
     };
 
     console.log('Sending request to Venice.ai...');
@@ -79,10 +81,24 @@ Format the response as JSON with these fields: title, summary, medicalTerms, dia
       throw new Error(`API request failed (${response.status}): ${responseText}`);
     }
 
+    const result = JSON.parse(responseText);
+    const csvData = result.choices[0].message.content;
+
+    // Validate CSV format
+    const lines = csvData.trim().split('\n');
+    const headerFields = lines[0].split(',').length;
+    const isValidCsv = lines.every(line => line.split(',').length === headerFields);
+
+    if (!isValidCsv) {
+      throw new Error('Invalid CSV format in response');
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: responseText
+      body: JSON.stringify({
+        csvData: csvData
+      })
     };
   } catch (error) {
     console.error('Function error:', error);

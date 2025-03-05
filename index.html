@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Document Extraction</title>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+    <title>PDF Data Extractor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,7 +38,7 @@
         button:hover {
             background-color: #3498db;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
@@ -51,14 +49,6 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-        }
-        #response {
-            white-space: pre-wrap;
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            display: none;
         }
         .error {
             color: #e74c3c;
@@ -73,378 +63,203 @@
             color: #3498db;
             margin: 10px 0;
         }
+        #csvOutput {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        .field-config {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #fff;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Venice.ai API Test</h1>
+        <h1>PDF Data Extractor</h1>
         
-        <!-- Google Docs Integration -->
+        <!-- API Configuration -->
         <div class="section">
-            <h2>Google Docs Integration</h2>
-            <button id="authorizeButton" onclick="handleAuthClick()" aria-label="Sign in with Google">Sign In with Google</button>
-            <button id="signoutButton" onclick="handleSignoutClick()" style="display: none;" aria-label="Sign out">Sign Out</button>
-            <button id="pickFile" onclick="showPicker()" style="display: none;" aria-label="Select file from Google Drive">Select from Google Drive</button>
-            <div id="googleStatus" role="status"></div>
-        </div>
-
-        <!-- API Key Section -->
-        <div class="section">
-            <h2>API Key</h2>
-            <label for="apiKeySelect">Select API Key</label>
-            <select id="apiKeySelect" style="margin-bottom: 10px;" aria-label="Select API Key">
-                <option value="LB6aPLu3J8DPuVBjWZQsyDUPx0eq0NJIDzIW2_CRLm">API Key 1</option>
-                <option value="IwfSe0sFYo6RSxKAzraN0C7NSqFL7OrJuh6TzNh9Me">API Key 2</option>
-            </select>
-            <label for="apiKey">Custom API Key</label>
-            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key" aria-label="Enter custom API key">
-            <button onclick="updateApiKey()" aria-label="Update API Key">Update API Key</button>
+            <h2>API Configuration</h2>
+            <label for="apiKey">Venice.ai API Key</label>
+            <input type="password" id="apiKey" placeholder="Enter your Venice.ai API key" aria-label="Enter API key">
             <button onclick="testConnection()" aria-label="Test API Connection">Test Connection</button>
             <div id="connectionStatus" role="status"></div>
         </div>
 
-        <!-- Model Selection -->
+        <!-- Field Configuration -->
         <div class="section">
-            <h2>Model Selection</h2>
-            <label for="modelSelect">Select Model</label>
-            <select id="modelSelect" aria-label="Select AI Model">
-                <option value="qwen-2.5-vl">Qwen 2.5 VL 72B (Recommended)</option>
-                <option value="llama-3.3-70b">Llama 3.3 70B</option>
-                <option value="llama-3.2-3b">Llama 3.2 3B</option>
-                <option value="dolphin-2.9.2-qwen2-72b">Dolphin 2.9.2 Qwen2 72B</option>
-            </select>
-            <button onclick="listModels()" aria-label="List Available Models">List Available Models</button>
-            <div id="modelList" role="status"></div>
+            <h2>Field Configuration</h2>
+            <div id="fieldList">
+                <div class="field-config">
+                    <label>Field 1:</label>
+                    <input type="text" class="field-name" value="Title" placeholder="Field name">
+                </div>
+                <div class="field-config">
+                    <label>Field 2:</label>
+                    <input type="text" class="field-name" value="Date" placeholder="Field name">
+                </div>
+                <div class="field-config">
+                    <label>Field 3:</label>
+                    <input type="text" class="field-name" value="Content" placeholder="Field name">
+                </div>
+            </div>
+            <button onclick="addField()" aria-label="Add Field">Add Field</button>
+            <button onclick="removeField()" aria-label="Remove Field">Remove Field</button>
         </div>
 
         <!-- File Upload -->
         <div class="section">
             <h2>Document Upload</h2>
-            <label for="fileInput">Select Document</label>
-            <input type="file" id="fileInput" accept=".pdf,.ppt,.pptx" aria-label="Select document to upload">
-            <button onclick="processDocument()" aria-label="Process Selected Document">Process Document</button>
+            <label for="fileInput">Select PDF Document</label>
+            <input type="file" id="fileInput" accept=".pdf" aria-label="Select PDF to upload">
+            <button onclick="processDocument()" aria-label="Process PDF">Process Document</button>
             <div id="loading" class="loading" role="status">Processing document...</div>
-            <div id="progress" style="margin-top: 10px; color: #3498db;" role="status"></div>
+            <div id="progress" role="status"></div>
         </div>
 
         <!-- Results -->
         <div class="section">
             <h2>Results</h2>
-            <div id="response" role="status"></div>
+            <div id="csvOutput" role="status"></div>
+            <button id="downloadCsv" onclick="downloadCsv()" style="display: none;" aria-label="Download CSV">Download CSV</button>
         </div>
     </div>
 
     <script>
-        const BASE_URL = '/.netlify/functions';
+        let lastCsvData = null;
 
-        // Initialize API key from select
-        document.getElementById('apiKey').value = document.getElementById('apiKeySelect').value;
+        function addField() {
+            const fieldList = document.getElementById('fieldList');
+            const newField = document.createElement('div');
+            newField.className = 'field-config';
+            const fieldNumber = fieldList.children.length + 1;
+            newField.innerHTML = `
+                <label>Field ${fieldNumber}:</label>
+                <input type="text" class="field-name" placeholder="Field name">
+            `;
+            fieldList.appendChild(newField);
+        }
 
-        // Update API key when selection changes
-        document.getElementById('apiKeySelect').addEventListener('change', function() {
-            document.getElementById('apiKey').value = this.value;
-        });
-
-        // Update API key from input
-        function updateApiKey() {
-            const apiKey = document.getElementById('apiKey').value.trim();
-            if (apiKey) {
-                // Add new option if key doesn't exist
-                const select = document.getElementById('apiKeySelect');
-                let exists = false;
-                for (let i = 0; i < select.options.length; i++) {
-                    if (select.options[i].value === apiKey) {
-                        select.selectedIndex = i;
-                        exists = true;
-                        break;
-                    }
-                }
-                if (!exists) {
-                    const option = new Option(`Custom API Key`, apiKey);
-                    select.add(option);
-                    select.selectedIndex = select.options.length - 1;
-                }
-                document.getElementById('connectionStatus').innerHTML = '<div class="success">API Key updated</div>';
+        function removeField() {
+            const fieldList = document.getElementById('fieldList');
+            if (fieldList.children.length > 1) {
+                fieldList.removeChild(fieldList.lastChild);
             }
         }
 
-        // Test API Connection
         async function testConnection() {
             const apiKey = document.getElementById('apiKey').value;
             const status = document.getElementById('connectionStatus');
             
             try {
-                const response = await fetch(`${BASE_URL}/test-connection`, {
+                const response = await fetch('/.netlify/functions/test-connection', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ apiKey })
                 });
-                
-                const data = await response.json();
-                
+
+                const result = await response.json();
                 if (response.ok) {
-                    status.innerHTML = '<div class="success">✓ Connection successful!</div>';
-                    console.log('Available models:', data);
+                    status.innerHTML = '<div class="success">Connection successful!</div>';
                 } else {
-                    status.innerHTML = `<div class="error">✗ Connection failed: ${data.error || 'Unknown error'}</div>`;
+                    status.innerHTML = `<div class="error">Connection failed: ${result.error}</div>`;
                 }
             } catch (error) {
-                status.innerHTML = `<div class="error">✗ Error: ${error.message}</div>`;
+                status.innerHTML = `<div class="error">Connection error: ${error.message}</div>`;
             }
         }
 
-        // List Available Models
-        async function listModels() {
-            const apiKey = document.getElementById('apiKey').value;
-            const modelList = document.getElementById('modelList');
-            
-            try {
-                const response = await fetch(`${BASE_URL}/test-connection`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ apiKey })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    const models = data.data || [];
-                    modelList.innerHTML = '<div class="success">Available Models:</div>' +
-                        models.map(model => `<div>${model.id}</div>`).join('');
-                } else {
-                    modelList.innerHTML = `<div class="error">Error: ${data.error || 'Unknown error'}</div>`;
-                }
-            } catch (error) {
-                modelList.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-            }
-        }
-
-        // Process Document
         async function processDocument() {
+            const fileInput = document.getElementById('fileInput');
             const apiKey = document.getElementById('apiKey').value;
-            const model = document.getElementById('modelSelect').value;
-            const file = document.getElementById('fileInput').files[0];
-            const response = document.getElementById('response');
             const loading = document.getElementById('loading');
             const progress = document.getElementById('progress');
-            
-            if (!file) {
-                alert('Please select a file first');
+            const csvOutput = document.getElementById('csvOutput');
+            const downloadBtn = document.getElementById('downloadCsv');
+
+            if (!fileInput.files[0]) {
+                progress.innerHTML = '<div class="error">Please select a file</div>';
                 return;
             }
 
-            // Check file size
-            if (file.size > 25 * 1024 * 1024) { // 25MB limit
-                alert('File size must be less than 25MB');
+            if (!apiKey) {
+                progress.innerHTML = '<div class="error">Please enter an API key</div>';
                 return;
             }
+
+            // Get field configuration
+            const fields = Array.from(document.getElementsByClassName('field-name'))
+                .map(input => input.value)
+                .filter(value => value.trim() !== '');
 
             loading.style.display = 'block';
-            response.style.display = 'none';
-            response.innerHTML = '';
-            progress.textContent = 'Reading file...';
+            progress.innerHTML = '';
+            csvOutput.style.display = 'none';
+            downloadBtn.style.display = 'none';
 
             try {
-                // Convert file to base64
+                const file = fileInput.files[0];
                 const reader = new FileReader();
-                reader.readAsDataURL(file);
-                
-                reader.onload = async () => {
-                    try {
-                        const base64File = reader.result.split(',')[1];
-                        progress.textContent = `File loaded (${Math.round(base64File.length / 1024)} KB). Processing...`;
-                        
-                        // Send to Netlify function
-                        progress.textContent = 'Analyzing document with AI...';
-                        const functionResponse = await fetch(`${BASE_URL}/process-document`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                file: base64File,
-                                apiKey: apiKey,
-                                model: model,
-                                filename: file.name
-                            })
-                        });
 
-                        console.log('Function response status:', functionResponse.status);
-                        const data = await functionResponse.json();
-                        console.log('Function response:', data);
-                        
-                        loading.style.display = 'none';
-                        response.style.display = 'block';
-                        progress.textContent = '';
-                        
-                        if (functionResponse.ok) {
-                            const content = data.choices[0].message.content;
-                            try {
-                                // Try to parse and format as JSON
-                                const parsed = JSON.parse(content);
-                                response.innerHTML = '<pre>' + JSON.stringify(parsed, null, 2) + '</pre>';
-                            } catch {
-                                // If not valid JSON, show as is
-                                response.textContent = content;
-                            }
-                        } else {
-                            response.innerHTML = `<div class="error">Error: ${JSON.stringify(data, null, 2)}</div>`;
-                            console.error('Error details:', data);
-                        }
-                    } catch (error) {
-                        loading.style.display = 'none';
-                        response.style.display = 'block';
-                        progress.textContent = '';
-                        response.innerHTML = `<div class="error">Error processing document: ${error.message}</div>`;
-                        console.error('Processing error:', error);
+                reader.onload = async function(e) {
+                    const base64Data = e.target.result.split(',')[1];
+
+                    const response = await fetch('/.netlify/functions/process-document', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            file: base64Data,
+                            apiKey: apiKey,
+                            fields: fields,
+                            filename: file.name
+                        })
+                    });
+
+                    const result = await response.json();
+                    loading.style.display = 'none';
+
+                    if (response.ok) {
+                        lastCsvData = result.csvData;
+                        csvOutput.textContent = result.csvData;
+                        csvOutput.style.display = 'block';
+                        downloadBtn.style.display = 'block';
+                        progress.innerHTML = '<div class="success">Document processed successfully!</div>';
+                    } else {
+                        progress.innerHTML = `<div class="error">Error: ${result.error}</div>`;
                     }
                 };
 
-                reader.onerror = (error) => {
-                    loading.style.display = 'none';
-                    response.style.display = 'block';
-                    progress.textContent = '';
-                    response.innerHTML = `<div class="error">Error reading file: ${error}</div>`;
-                    console.error('File reading error:', error);
-                };
+                reader.readAsDataURL(file);
             } catch (error) {
                 loading.style.display = 'none';
-                response.style.display = 'block';
-                progress.textContent = '';
-                response.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-                console.error('General error:', error);
+                progress.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
 
-        // Google API Configuration
-        const CLIENT_ID = 'YOUR_CLIENT_ID';
-        const API_KEY = 'YOUR_API_KEY';
-        const DISCOVERY_DOCS = ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'];
-        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
+        function downloadCsv() {
+            if (!lastCsvData) return;
 
-        let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
+            const blob = new Blob([lastCsvData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'extracted_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         }
-
-        async function initializeGapiClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: DISCOVERY_DOCS,
-            });
-            gapiInited = true;
-            maybeEnableButtons();
-        }
-
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // defined later
-            });
-            gisInited = true;
-            maybeEnableButtons();
-        }
-
-        function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                document.getElementById('authorizeButton').style.display = 'block';
-            }
-        }
-
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    throw (resp);
-                }
-                document.getElementById('signoutButton').style.display = 'block';
-                document.getElementById('authorizeButton').style.display = 'none';
-                document.getElementById('pickFile').style.display = 'block';
-                document.getElementById('googleStatus').innerHTML = '<div class="success">Successfully signed in</div>';
-            };
-
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                document.getElementById('authorizeButton').style.display = 'block';
-                document.getElementById('signoutButton').style.display = 'none';
-                document.getElementById('pickFile').style.display = 'none';
-                document.getElementById('googleStatus').innerHTML = '<div class="success">Signed out</div>';
-            }
-        }
-
-        async function showPicker() {
-            try {
-                const response = await gapi.client.drive.files.list({
-                    'pageSize': 10,
-                    'fields': 'files(id, name, mimeType)',
-                    'q': "mimeType='application/pdf' or mimeType='application/vnd.google-apps.document'"
-                });
-
-                const files = response.result.files;
-                if (files && files.length > 0) {
-                    const file = files[0]; // For demo, just get the first file
-                    if (file.mimeType === 'application/vnd.google-apps.document') {
-                        // Export Google Doc as PDF
-                        const pdfResponse = await gapi.client.drive.files.export({
-                            fileId: file.id,
-                            mimeType: 'application/pdf'
-                        }, { responseType: 'arraybuffer' });
-                        
-                        const blob = new Blob([pdfResponse.body], { type: 'application/pdf' });
-                        const pdfFile = new File([blob], `${file.name}.pdf`, { type: 'application/pdf' });
-                        
-                        // Create a new FileList-like object
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(pdfFile);
-                        
-                        // Set the file input's files
-                        document.getElementById('fileInput').files = dataTransfer.files;
-                        document.getElementById('googleStatus').innerHTML = `<div class="success">Selected: ${file.name}</div>`;
-                    } else {
-                        // Handle PDF directly
-                        const pdfResponse = await gapi.client.drive.files.get({
-                            fileId: file.id,
-                            alt: 'media'
-                        }, { responseType: 'arraybuffer' });
-                        
-                        const blob = new Blob([pdfResponse.body], { type: 'application/pdf' });
-                        const pdfFile = new File([blob], file.name, { type: 'application/pdf' });
-                        
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(pdfFile);
-                        
-                        document.getElementById('fileInput').files = dataTransfer.files;
-                        document.getElementById('googleStatus').innerHTML = `<div class="success">Selected: ${file.name}</div>`;
-                    }
-                } else {
-                    document.getElementById('googleStatus').innerHTML = '<div class="error">No files found.</div>';
-                }
-            } catch (err) {
-                document.getElementById('googleStatus').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-                console.error('Error loading files:', err);
-            }
-        }
-
-        // Load the Google API
-        document.write('<script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"><\/script>');
-        document.write('<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"><\/script>');
     </script>
 </body>
 </html> 
