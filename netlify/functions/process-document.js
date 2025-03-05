@@ -3,7 +3,7 @@
 // It's a Node.js internal module that's being deprecated but still used by some packages
 const fetch = require('node-fetch');
 
-// Hard-coded API key for testing
+// Hard-coded API key for testing - ensure it's properly formatted
 const VENICE_API_KEY = "n9jfLskZuDX9ecMPH2H6SfKLgCtHlIS6zjo4XAGY6l";
 
 exports.handler = async function(event, context) {
@@ -35,8 +35,17 @@ exports.handler = async function(event, context) {
       throw new Error('Missing required parameter: file');
     }
 
-    // Use the hard-coded API key instead of the one from the request
+    // Log file information
+    console.log('File name:', filename);
+    console.log('File data length:', file.length);
+    
+    // Use the hard-coded API key
     const apiKey = VENICE_API_KEY;
+    
+    // Validate API key
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('API key is missing or invalid');
+    }
     
     // Create a simulated CSV response for testing
     const simulateExtraction = () => {
@@ -52,6 +61,15 @@ exports.handler = async function(event, context) {
 
     // First, try to extract text from the PowerPoint using a text extraction API
     console.log('Extracting content from PowerPoint...');
+    console.log('File type:', filename.split('.').pop());
+    
+    // Determine the correct MIME type based on file extension
+    let mimeType = 'application/pdf';
+    const fileExt = filename.split('.').pop().toLowerCase();
+    if (fileExt === 'ppt' || fileExt === 'pptx') {
+      mimeType = fileExt === 'ppt' ? 'application/vnd.ms-powerpoint' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    }
+    console.log('Using MIME type:', mimeType);
     
     // Create the request payload for PowerPoint extraction
     const extractionPayload = {
@@ -71,7 +89,7 @@ exports.handler = async function(event, context) {
             {
               type: "image_url",
               image_url: {
-                url: `data:application/pdf;base64,${file}`
+                url: `data:${mimeType};base64,${file}`
               }
             }
           ]
@@ -81,6 +99,30 @@ exports.handler = async function(event, context) {
       max_tokens: 4000
     };
 
+    console.log('Sending request to Venice.ai API...');
+    console.log('API endpoint: https://api.venice.ai/api/v1/chat/completions');
+    console.log('Using model:', extractionPayload.model);
+    
+    // Log a truncated version of the payload for debugging
+    const payloadForLogging = { ...extractionPayload };
+    if (payloadForLogging.messages && payloadForLogging.messages.length > 0) {
+      for (let i = 0; i < payloadForLogging.messages.length; i++) {
+        const message = payloadForLogging.messages[i];
+        if (message.content && Array.isArray(message.content)) {
+          for (let j = 0; j < message.content.length; j++) {
+            const content = message.content[j];
+            if (content.type === 'image_url' && content.image_url && content.image_url.url) {
+              // Truncate the base64 data for logging
+              const url = content.image_url.url;
+              const prefix = url.substring(0, url.indexOf(',') + 1);
+              content.image_url.url = prefix + '[BASE64_DATA_TRUNCATED]';
+            }
+          }
+        }
+      }
+    }
+    console.log('Request payload (truncated):', JSON.stringify(payloadForLogging, null, 2));
+    
     // Make the extraction request
     const extractionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -92,42 +134,73 @@ exports.handler = async function(event, context) {
     });
 
     console.log('Extraction response status:', extractionResponse.status);
+    console.log('Response headers:', JSON.stringify(Object.fromEntries([...extractionResponse.headers.entries()])));
     
     if (extractionResponse.ok) {
       const extractionResult = await extractionResponse.json();
-      const csvData = extractionResult.choices[0].message.content;
-      console.log('Successfully extracted content from PowerPoint');
+      console.log('API Response received');
       
-      // Basic validation of CSV format
-      const lines = csvData.trim().split('\n');
-      if (lines.length < 2) {
-        console.log('CSV validation failed: not enough lines');
+      if (extractionResult.choices && extractionResult.choices.length > 0 && extractionResult.choices[0].message) {
+        const csvData = extractionResult.choices[0].message.content;
+        console.log('Successfully extracted content from PowerPoint');
+        console.log('CSV data first 100 chars:', csvData.substring(0, 100));
+        
+        // Basic validation of CSV format
+        const lines = csvData.trim().split('\n');
+        if (lines.length < 2) {
+          console.log('CSV validation failed: not enough lines');
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              csvData: simulateExtraction(),
+              note: "Using simulated data due to extraction issues - API returned insufficient data"
+            })
+          };
+        }
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            csvData: csvData
+          })
+        };
+      } else {
+        console.log('API response missing expected data structure:', JSON.stringify(extractionResult, null, 2));
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
             csvData: simulateExtraction(),
-            note: "Using simulated data due to extraction issues"
+            note: "Using simulated data due to unexpected API response format"
           })
         };
       }
+    } else {
+      // Try to get the error message from the response
+      let errorMessage = "Unknown error";
+      try {
+        const errorResponse = await extractionResponse.text();
+        console.log('Error response from API:', errorResponse);
+        try {
+          const errorJson = JSON.parse(errorResponse);
+          errorMessage = errorJson.error || errorJson.message || "API error";
+        } catch (e) {
+          errorMessage = errorResponse || "API error";
+        }
+      } catch (e) {
+        errorMessage = `API returned status ${extractionResponse.status}`;
+      }
+      
+      console.log('Extraction failed:', errorMessage);
       
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          csvData: csvData
-        })
-      };
-    } else {
-      console.log('Extraction failed, using fallback method');
-      // If extraction fails, use a fallback approach
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
           csvData: simulateExtraction(),
-          note: "Using simulated data due to PowerPoint processing limitations"
+          note: `Using simulated data due to API error: ${errorMessage}`
         })
       };
     }

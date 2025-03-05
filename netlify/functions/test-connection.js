@@ -1,7 +1,7 @@
 // Netlify Function to test Venice.ai API connection
 const fetch = require('node-fetch');
 
-// Hard-coded API key for testing
+// Hard-coded API key for testing - ensure it's properly formatted
 const VENICE_API_KEY = "n9jfLskZuDX9ecMPH2H6SfKLgCtHlIS6zjo4XAGY6l";
 
 exports.handler = async function(event, context) {
@@ -26,8 +26,18 @@ exports.handler = async function(event, context) {
       throw new Error('Only POST requests are allowed');
     }
 
-    // Use the hard-coded API key instead of the one from the request
+    console.log('Testing connection to Venice.ai API...');
+    
+    // Use the hard-coded API key
     const apiKey = VENICE_API_KEY;
+    
+    // Validate API key
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('API key is missing or invalid');
+    }
+    
+    console.log('API key length:', apiKey.length);
+    console.log('Using model: qwen-2.5-vl');
 
     // Test the connection by making a simple request
     const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
@@ -48,16 +58,23 @@ exports.handler = async function(event, context) {
       })
     });
 
+    console.log('Test connection response status:', response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
+      console.log('Error response:', errorText);
       throw new Error(`API request failed (${response.status}): ${errorText}`);
     }
+    
+    const responseData = await response.json();
+    console.log('Connection test successful, model responded');
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        message: 'Connection successful'
+        message: 'Connection successful',
+        model: 'qwen-2.5-vl'
       })
     };
   } catch (error) {

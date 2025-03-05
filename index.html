@@ -61,6 +61,10 @@
         .warning {
             color: #f39c12;
             margin: 10px 0;
+            padding: 10px;
+            background-color: #fef9e7;
+            border-left: 4px solid #f39c12;
+            border-radius: 3px;
         }
         .loading {
             display: none;
@@ -203,6 +207,21 @@
                 return;
             }
 
+            // Check file size
+            const file = fileInput.files[0];
+            const fileSizeMB = file.size / (1024 * 1024);
+            if (fileSizeMB > 25) {
+                progress.innerHTML = '<div class="error">File size exceeds 25MB limit. Please select a smaller file.</div>';
+                return;
+            }
+
+            // Check file type
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            if (!['ppt', 'pptx', 'pdf'].includes(fileExt)) {
+                progress.innerHTML = '<div class="error">Unsupported file type. Please select a PowerPoint (.ppt, .pptx) or PDF file.</div>';
+                return;
+            }
+
             // Reset UI
             loading.style.display = 'block';
             step1.style.display = 'block';
@@ -210,15 +229,16 @@
             csvOutput.style.display = 'none';
             downloadBtn.style.display = 'none';
             noteDiv.style.display = 'none';
+            noteDiv.className = 'warning';
             resultsTable.style.display = 'none';
             resultsBody.innerHTML = '';
 
             try {
-                const file = fileInput.files[0];
                 const reader = new FileReader();
 
                 reader.onload = async function(e) {
                     const base64Data = e.target.result.split(',')[1];
+                    progress.innerHTML = '<div>Sending file to API...</div>';
 
                     // Show step 1
                     step1.style.display = 'block';
@@ -258,7 +278,20 @@
                         resultsTable.style.display = 'table';
                     } else {
                         progress.innerHTML = `<div class="error">Error: ${result.error}</div>`;
+                        if (result.details) {
+                            const detailsDiv = document.createElement('div');
+                            detailsDiv.className = 'error';
+                            detailsDiv.style.marginTop = '10px';
+                            detailsDiv.textContent = `Details: ${result.details}`;
+                            progress.appendChild(detailsDiv);
+                        }
                     }
+                };
+
+                reader.onerror = function() {
+                    loading.style.display = 'none';
+                    step1.style.display = 'none';
+                    progress.innerHTML = '<div class="error">Error reading file. Please try again with a different file.</div>';
                 };
 
                 reader.readAsDataURL(file);
