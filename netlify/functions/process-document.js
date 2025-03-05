@@ -2,6 +2,7 @@
 // Note: The DEP0040 warning about punycode is related to dependencies and can be ignored
 // It's a Node.js internal module that's being deprecated but still used by some packages
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 
 // Hard-coded API key for testing - ensure it's properly formatted
 const VENICE_API_KEY = "n9jfLskZuDX9ecMPH2H6SfKLgCtHlIS6zjo4XAGY6l";
@@ -59,47 +60,30 @@ exports.handler = async function(event, context) {
       return [headers, ...rows].join('\n');
     };
 
-    // Create the request payload for document extraction
-    const extractionPayload = {
-      model: "llama-3.3-70b",  // Using Llama 3.3 70B model as per documentation
-      messages: [
-        {
-          role: "system",
-          content: "You are a document analyzer that extracts structured information from documents and returns it in CSV format."
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract the following information and return as CSV with headers:\n- Slide # (the slide number)\n- Title (the main heading or title of the slide)\n- Summary (a comprehensive summary of the slide content)\n\nReturn ONLY the CSV data with headers."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${file}`
-              }
-            }
-          ]
-        }
-      ],
-      venice_parameters: {
-        enable_web_search: "off"
-      }
-    };
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(file, 'base64');
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', fileBuffer, {
+      filename: filename,
+      contentType: 'application/pdf'
+    });
+    formData.append('extractor', 'pdf');
+    formData.append('model', 'llama-3.3-70b');
 
     console.log('Sending request to Venice.ai API...');
-    console.log('API endpoint: https://api.venice.ai/api/v1/chat/completions');
-    console.log('Using model:', extractionPayload.model);
+    console.log('API endpoint: https://api.venice.ai/api/v1/extract');
+    console.log('Using model: llama-3.3-70b');
     
     // Make the extraction request
-    const extractionResponse = await fetch('https://api.venice.ai/api/v1/chat/completions', {
+    const extractionResponse = await fetch('https://api.venice.ai/api/v1/extract', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        ...formData.getHeaders()
       },
-      body: JSON.stringify(extractionPayload)
+      body: formData
     });
 
     console.log('Extraction response status:', extractionResponse.status);
@@ -109,24 +93,16 @@ exports.handler = async function(event, context) {
       const extractionResult = await extractionResponse.json();
       console.log('API Response received');
       
-      if (extractionResult.choices && extractionResult.choices.length > 0 && extractionResult.choices[0].message) {
-        const csvData = extractionResult.choices[0].message.content;
+      if (extractionResult.content && Array.isArray(extractionResult.content)) {
+        // Convert the extracted content to CSV format
+        const headers = "Slide #,Title,Summary";
+        const rows = extractionResult.content.map(slide => 
+          `${slide.slide_number},"${slide.title}","${slide.summary}"`
+        );
+        const csvData = [headers, ...rows].join('\n');
+        
         console.log('Successfully extracted content');
         console.log('CSV data first 100 chars:', csvData.substring(0, 100));
-        
-        // Basic validation of CSV format
-        const lines = csvData.trim().split('\n');
-        if (lines.length < 2) {
-          console.log('CSV validation failed: not enough lines');
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-              csvData: simulateExtraction(),
-              note: "Using simulated data due to extraction issues - API returned insufficient data"
-            })
-          };
-        }
         
         return {
           statusCode: 200,

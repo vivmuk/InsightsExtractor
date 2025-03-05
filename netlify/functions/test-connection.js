@@ -39,29 +39,13 @@ exports.handler = async function(event, context) {
     console.log('API key length:', apiKey.length);
     console.log('Using model: llama-3.3-70b');
 
-    // Test the connection by making a simple request
-    const response = await fetch('https://api.venice.ai/api/v1/chat/completions', {
-      method: 'POST',
+    // Test the connection by making a simple request to get model info
+    const response = await fetch('https://api.venice.ai/api/v1/models', {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant."
-          },
-          {
-            role: "user",
-            content: "Test connection"
-          }
-        ],
-        venice_parameters: {
-          enable_web_search: "off"
-        }
-      })
+      }
     });
 
     console.log('Test connection response status:', response.status);
@@ -73,14 +57,18 @@ exports.handler = async function(event, context) {
     }
     
     const responseData = await response.json();
-    console.log('Connection test successful, model responded');
+    console.log('Connection test successful, got model list');
 
+    // Check if llama-3.3-70b is available
+    const llamaModel = responseData.models?.find(m => m.id === 'llama-3.3-70b');
+    
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         message: 'Connection successful',
-        model: 'llama-3.3-70b'
+        model: 'llama-3.3-70b',
+        modelAvailable: !!llamaModel
       })
     };
   } catch (error) {
