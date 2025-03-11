@@ -254,21 +254,24 @@
                 const groups = {
                     vision: { label: '🖼️ Vision Models', models: [] },
                     gpt4: { label: '🧠 GPT-4 Models', models: [] },
-                    gpt35: { label: '💭 GPT-3.5 Models', models: [] },
-                    other: { label: '🔧 Other Models', models: [] }
+                    gpt35: { label: '💭 GPT-3.5 Models', models: [] }
                 };
                 
                 availableModels.forEach(model => {
-                    if (model.capabilities.vision) {
+                    if (model.id.includes('vision')) {
                         groups.vision.models.push(model);
                     } else if (model.id.includes('gpt-4')) {
                         groups.gpt4.models.push(model);
                     } else if (model.id.includes('gpt-3.5')) {
                         groups.gpt35.models.push(model);
-                    } else {
-                        groups.other.models.push(model);
                     }
                 });
+                
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'gpt-4-vision-preview';
+                defaultOption.text = 'GPT-4 Vision (Recommended)';
+                select.appendChild(defaultOption);
                 
                 Object.entries(groups).forEach(([key, group]) => {
                     if (group.models.length > 0) {
@@ -276,23 +279,27 @@
                         optgroup.label = group.label;
                         
                         group.models.forEach(model => {
-                            const option = document.createElement('option');
-                            option.value = model.id;
-                            option.text = model.id;
-                            optgroup.appendChild(option);
+                            if (model.id !== 'gpt-4-vision-preview') {
+                                const option = document.createElement('option');
+                                option.value = model.id;
+                                option.text = model.id;
+                                optgroup.appendChild(option);
+                            }
                         });
                         
-                        select.appendChild(optgroup);
+                        if (optgroup.children.length > 0) {
+                            select.appendChild(optgroup);
+                        }
                     }
                 });
                 
                 select.value = 'gpt-4-vision-preview';
-                select.addEventListener('change', updateModelInfo);
                 updateModelInfo();
             } catch (error) {
                 console.error('Error fetching models:', error);
-                document.getElementById('modelSelect').innerHTML = 
-                    '<option value="gpt-4-vision-preview">GPT-4 Vision (Default)</option>';
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '<option value="gpt-4-vision-preview">GPT-4 Vision (Default)</option>';
+                updateModelInfo();
             }
         }
 
@@ -451,6 +458,102 @@
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+        }
+
+        async function testConnection() {
+            try {
+                const progressDiv = document.getElementById('progress');
+                const statusMessage = document.getElementById('statusMessage');
+                progressDiv.style.display = 'block';
+                updateProgress('Testing connection to OpenAI...', 30);
+
+                console.log('Initiating connection test...');
+                const response = await fetch('/.netlify/functions/process-document', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                if (data.success) {
+                    updateProgress('✅ Connection successful!', 100);
+                    statusMessage.style.color = 'var(--success-color)';
+                } else {
+                    throw new Error(data.error || 'Connection test failed');
+                }
+                
+                // Update models if available
+                if (data.models) {
+                    availableModels = data.models;
+                    updateModelSelect();
+                }
+                
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 2000);
+            } catch (error) {
+                console.error('Connection test error:', error);
+                updateProgress('❌ Connection failed: ' + error.message, 100);
+                document.getElementById('statusMessage').style.color = 'var(--error-color)';
+                setTimeout(() => {
+                    document.getElementById('progress').style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateModelSelect() {
+            const select = document.getElementById('modelSelect');
+            select.innerHTML = '';
+            
+            // Add default option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = 'gpt-4-vision-preview';
+            defaultOption.text = 'GPT-4 Vision (Recommended)';
+            select.appendChild(defaultOption);
+            
+            // Group models
+            const groups = {
+                vision: { label: '🖼️ Vision Models', models: [] },
+                gpt4: { label: '🧠 GPT-4 Models', models: [] },
+                gpt35: { label: '💭 GPT-3.5 Models', models: [] }
+            };
+            
+            availableModels.forEach(model => {
+                if (model.id.includes('vision')) {
+                    groups.vision.models.push(model);
+                } else if (model.id.includes('gpt-4')) {
+                    groups.gpt4.models.push(model);
+                } else if (model.id.includes('gpt-3.5')) {
+                    groups.gpt35.models.push(model);
+                }
+            });
+            
+            Object.entries(groups).forEach(([key, group]) => {
+                if (group.models.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = group.label;
+                    
+                    group.models.forEach(model => {
+                        if (model.id !== 'gpt-4-vision-preview') {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.text = model.id;
+                            optgroup.appendChild(option);
+                        }
+                    });
+                    
+                    if (optgroup.children.length > 0) {
+                        select.appendChild(optgroup);
+                    }
+                }
+            });
+            
+            select.value = 'gpt-4-vision-preview';
+            updateModelInfo();
         }
 
         document.addEventListener('DOMContentLoaded', fetchModels);
