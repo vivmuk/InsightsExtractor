@@ -1,8 +1,8 @@
-// Netlify Function to test Venice.ai API connection
+// Netlify Function to test OpenAI API connection
 const fetch = require('node-fetch');
 
 // Hard-coded API key for testing - ensure it's properly formatted
-const VENICE_API_KEY = "n9jfLskZuDX9ecMPH2H6SfKLgCtHlIS6zjo4XAGY6l";
+const OPENAI_API_KEY = "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";
 
 exports.handler = async function(event, context) {
   // Enable CORS
@@ -26,10 +26,10 @@ exports.handler = async function(event, context) {
       throw new Error('Only POST requests are allowed');
     }
 
-    console.log('Testing connection to Venice.ai API...');
+    console.log('Testing connection to OpenAI API...');
     
-    // Use the hard-coded API key
-    const apiKey = VENICE_API_KEY;
+    // Use the OpenAI API key
+    const apiKey = OPENAI_API_KEY;
     
     // Validate API key
     if (!apiKey || apiKey.trim() === '') {
@@ -37,15 +37,30 @@ exports.handler = async function(event, context) {
     }
     
     console.log('API key length:', apiKey.length);
-    console.log('Using model: llama-3.3-70b');
+    console.log('Using model: gpt-4o-mini-2024-07-18');
 
-    // Test the connection by making a simple request to get model info
-    const response = await fetch('https://api.venice.ai/api/v1/models', {
-      method: 'GET',
+    // Test the connection by making a simple request
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini-2024-07-18",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Test connection"
+              }
+            ]
+          }
+        ],
+        max_tokens: 20
+      })
     });
 
     console.log('Test connection response status:', response.status);
@@ -53,22 +68,23 @@ exports.handler = async function(event, context) {
     if (!response.ok) {
       const errorText = await response.text();
       console.log('Error response:', errorText);
-      throw new Error(`API request failed (${response.status}): ${errorText}`);
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(`API request failed (${response.status}): ${errorJson.error?.message || errorJson.message || errorText}`);
+      } catch (e) {
+        throw new Error(`API request failed (${response.status}): ${errorText}`);
+      }
     }
     
     const responseData = await response.json();
-    console.log('Connection test successful, got model list');
+    console.log('Connection test successful');
 
-    // Check if llama-3.3-70b is available
-    const llamaModel = responseData.models?.find(m => m.id === 'llama-3.3-70b');
-    
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         message: 'Connection successful',
-        model: 'llama-3.3-70b',
-        modelAvailable: !!llamaModel
+        model: 'gpt-4o-mini-2024-07-18'
       })
     };
   } catch (error) {

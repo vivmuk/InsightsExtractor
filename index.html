@@ -3,369 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerPoint Slide Extractor</title>
+    <title>Medical Presentation Analyzer</title>
     <style>
+        :root {
+            --primary-color: #2980b9;
+            --hover-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            text-size-adjust: 100%;
+            background-color: #f8f9fa;
+            color: #2c3e50;
         }
+
         .container {
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
         }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
         .section {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
         }
-        button {
-            background-color: #2980b9;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
+
+        .model-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
         }
-        button:hover {
-            background-color: #3498db;
-        }
-        input, select, textarea {
+
+        select, input[type="file"] {
             width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            background-color: white;
+            transition: all 0.3s ease;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+
+        select:focus, input[type="file"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.1);
         }
-        .error {
-            color: #e74c3c;
-            margin: 10px 0;
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
-        .success {
-            color: #27ae60;
-            margin: 10px 0;
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            font-weight: 500;
         }
-        .warning {
-            color: #f39c12;
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #fef9e7;
-            border-left: 4px solid #f39c12;
+
+        button:hover {
+            background-color: var(--hover-color);
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background-color: #95a5a6;
+        }
+
+        button.download {
+            background-color: var(--success-color);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
             border-radius: 3px;
         }
-        .loading {
+
+        .results-container {
+            margin-top: 30px;
             display: none;
-            color: #3498db;
-            margin: 10px 0;
         }
-        #csvOutput {
-            white-space: pre-wrap;
-            font-family: monospace;
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            display: none;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .step {
-            display: none;
-            margin: 5px 0;
-            padding: 5px;
-            border-left: 3px solid #3498db;
-            padding-left: 10px;
-        }
-        .model-info {
-            background-color: #eaf2f8;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .capability-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0 4px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            margin: 10px 0;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .download-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
             display: none;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
         }
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #f1f1f1;
+
+        .pulse {
+            animation: pulse 2s infinite;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>PowerPoint Slide Extractor</h1>
+        <h1>Medical Presentation Analyzer</h1>
         
-        <!-- Model Information -->
-        <div class="model-info">
-            <strong>Model:</strong> Qwen 2.5 VL 72B (via Venice.ai)<br>
-            <strong>API Key:</strong> Using pre-configured key for testing<br>
-            <strong>Extraction:</strong> Slide #, Title, and Comprehensive Summary for each slide
-        </div>
-        
-        <!-- File Upload -->
         <div class="section">
-            <h2>Presentation Upload</h2>
-            <label for="fileInput">Select PowerPoint Presentation</label>
-            <input type="file" id="fileInput" accept=".ppt,.pptx,.pdf" aria-label="Select PowerPoint to upload">
-            <button onclick="testConnection()" aria-label="Test API Connection">Test Connection</button>
-            <button onclick="processDocument()" aria-label="Process Presentation">Process Presentation</button>
-            <div id="connectionStatus" role="status"></div>
-            <div id="loading" class="loading" role="status">Processing presentation...</div>
-            <div id="step1" class="step">Analyzing slides and extracting content...</div>
-            <div id="progress" role="status"></div>
+            <div class="model-selection">
+                <label for="modelSelect"><strong>Select Model:</strong></label>
+                <select id="modelSelect" class="form-control">
+                    <option value="">Loading available models...</option>
+                </select>
+                <div id="modelDescription" class="text-muted mt-2"></div>
+                <div id="modelCapabilities" class="mt-2"></div>
+            </div>
         </div>
 
-        <!-- Results -->
         <div class="section">
-            <h2>Extracted Slide Information</h2>
-            <div id="note" class="warning" style="display: none;"></div>
-            <div id="csvOutput" role="status"></div>
-            <table id="resultsTable">
-                <thead>
-                    <tr>
-                        <th>Slide #</th>
-                        <th>Title</th>
-                        <th>Summary</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody">
-                </tbody>
-            </table>
-            <button id="downloadCsv" onclick="downloadCsv()" style="display: none;" aria-label="Download CSV">Download CSV</button>
+            <h2>Document Upload</h2>
+            <input type="file" id="fileInput" accept=".pdf,.pptx" class="form-control">
+            <div class="button-group">
+                <button onclick="testConnection()" class="secondary">Test Connection</button>
+                <button onclick="processDocument()" class="primary">Process Document</button>
+            </div>
+        </div>
+
+        <div id="progress" class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-bar-fill"></div>
+            </div>
+            <div id="statusMessage" class="text-center mt-2"></div>
+        </div>
+
+        <div id="results" class="results-container">
+            <h3>Analysis Results</h3>
+            <div id="csvResults"></div>
+            <div class="download-section" id="downloadSection">
+                <button onclick="downloadCSV()" class="download">
+                    <span>⬇️ Download CSV</span>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        let lastCsvData = null;
+        let availableModels = [];
+        let lastProcessedData = null;
 
-        async function testConnection() {
-            const status = document.getElementById('connectionStatus');
-            
-            status.innerHTML = '<div class="loading">Testing connection...</div>';
-            
+        async function fetchModels() {
             try {
-                const response = await fetch('/.netlify/functions/test-connection', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({})
+                const response = await fetch('/.netlify/functions/process-document', {
+                    method: 'GET'
                 });
-
-                const result = await response.json();
-                if (response.ok) {
-                    status.innerHTML = '<div class="success">Connection successful!</div>';
-                } else {
-                    status.innerHTML = `<div class="error">Connection failed: ${result.error}</div>`;
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch models');
                 }
+                
+                const data = await response.json();
+                availableModels = data.models;
+                
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '';
+                
+                // Create model groups
+                const groups = {
+                    vision: { label: '🖼️ Vision Models', models: [] },
+                    gpt4: { label: '🧠 GPT-4 Models', models: [] },
+                    gpt35: { label: '💭 GPT-3.5 Models', models: [] },
+                    other: { label: '🔧 Other Models', models: [] }
+                };
+                
+                availableModels.forEach(model => {
+                    if (model.capabilities.vision) {
+                        groups.vision.models.push(model);
+                    } else if (model.id.includes('gpt-4')) {
+                        groups.gpt4.models.push(model);
+                    } else if (model.id.includes('gpt-3.5')) {
+                        groups.gpt35.models.push(model);
+                    } else {
+                        groups.other.models.push(model);
+                    }
+                });
+                
+                Object.entries(groups).forEach(([key, group]) => {
+                    if (group.models.length > 0) {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = group.label;
+                        
+                        group.models.forEach(model => {
+                            const option = document.createElement('option');
+                            option.value = model.id;
+                            option.text = model.id;
+                            optgroup.appendChild(option);
+                        });
+                        
+                        select.appendChild(optgroup);
+                    }
+                });
+                
+                select.value = 'gpt-4-vision-preview';
+                select.addEventListener('change', updateModelInfo);
+                updateModelInfo();
             } catch (error) {
-                status.innerHTML = `<div class="error">Connection error: ${error.message}</div>`;
+                console.error('Error fetching models:', error);
+                document.getElementById('modelSelect').innerHTML = 
+                    '<option value="gpt-4-vision-preview">GPT-4 Vision (Default)</option>';
             }
+        }
+
+        function updateModelInfo() {
+            const select = document.getElementById('modelSelect');
+            const descriptionDiv = document.getElementById('modelDescription');
+            const capabilitiesDiv = document.getElementById('modelCapabilities');
+            
+            const selectedModel = availableModels.find(m => m.id === select.value) || {
+                id: 'gpt-4-vision-preview',
+                description: 'Default vision model for analyzing images and documents',
+                capabilities: { vision: true, chat: true }
+            };
+            
+            descriptionDiv.textContent = selectedModel.description || 
+                `Using ${selectedModel.id} for document analysis`;
+            
+            const capabilities = [];
+            if (selectedModel.capabilities.vision) 
+                capabilities.push('<span class="capability-badge capability-vision">👁️ Vision</span>');
+            if (selectedModel.capabilities.chat) 
+                capabilities.push('<span class="capability-badge capability-chat">💬 Chat</span>');
+            if (selectedModel.capabilities.embeddings) 
+                capabilities.push('<span class="capability-badge capability-embeddings">🔤 Embeddings</span>');
+            if (selectedModel.capabilities.audio) 
+                capabilities.push('<span class="capability-badge capability-audio">🔊 Audio</span>');
+            
+            capabilitiesDiv.innerHTML = `<strong>Capabilities:</strong> ${capabilities.join(' ')}`;
+            
+            const warningDiv = document.getElementById('modelWarning') || 
+                document.createElement('div');
+            warningDiv.id = 'modelWarning';
+            warningDiv.className = 'warning';
+            
+            if (!selectedModel.capabilities.vision) {
+                warningDiv.textContent = '⚠️ Note: This model may not support direct image/PDF analysis. ' +
+                    'Document content will be processed as text.';
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
+            
+            if (!document.getElementById('modelWarning')) {
+                descriptionDiv.parentNode.insertBefore(warningDiv, descriptionDiv.nextSibling);
+            }
+        }
+
+        function updateProgress(message, progress = 100) {
+            const progressContainer = document.getElementById('progress');
+            const statusMessage = document.getElementById('statusMessage');
+            const progressBarFill = document.querySelector('.progress-bar-fill');
+            
+            progressContainer.style.display = 'block';
+            statusMessage.textContent = message;
+            progressBarFill.style.width = `${progress}%`;
         }
 
         async function processDocument() {
             const fileInput = document.getElementById('fileInput');
-            const loading = document.getElementById('loading');
-            const step1 = document.getElementById('step1');
-            const progress = document.getElementById('progress');
-            const csvOutput = document.getElementById('csvOutput');
-            const downloadBtn = document.getElementById('downloadCsv');
-            const noteDiv = document.getElementById('note');
-            const resultsTable = document.getElementById('resultsTable');
-            const resultsBody = document.getElementById('resultsBody');
-
-            if (!fileInput.files[0]) {
-                progress.innerHTML = '<div class="error">Please select a file</div>';
-                return;
-            }
-
-            // Check file size
             const file = fileInput.files[0];
-            const fileSizeMB = file.size / (1024 * 1024);
-            if (fileSizeMB > 25) {
-                progress.innerHTML = '<div class="error">File size exceeds 25MB limit. Please select a smaller file.</div>';
+            const modelSelect = document.getElementById('modelSelect');
+            const selectedModel = modelSelect.value;
+
+            if (!file) {
+                alert('Please select a file first');
                 return;
             }
 
-            // Check file type
-            const fileExt = file.name.split('.').pop().toLowerCase();
-            if (!['ppt', 'pptx', 'pdf'].includes(fileExt)) {
-                progress.innerHTML = '<div class="error">Unsupported file type. Please select a PowerPoint (.ppt, .pptx) or PDF file.</div>';
-                return;
-            }
-
-            // Reset UI
-            loading.style.display = 'block';
-            step1.style.display = 'block';
-            progress.innerHTML = '';
-            csvOutput.style.display = 'none';
-            downloadBtn.style.display = 'none';
-            noteDiv.style.display = 'none';
-            noteDiv.className = 'warning';
-            resultsTable.style.display = 'none';
-            resultsBody.innerHTML = '';
+            updateProgress('Reading file...', 20);
+            document.getElementById('results').style.display = 'none';
 
             try {
                 const reader = new FileReader();
-
                 reader.onload = async function(e) {
                     const base64Data = e.target.result.split(',')[1];
-                    progress.innerHTML = '<div>Sending file to API...</div>';
-
-                    // Show step 1
-                    step1.style.display = 'block';
+                    
+                    updateProgress('Processing document...', 50);
                     
                     const response = await fetch('/.netlify/functions/process-document', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             file: base64Data,
-                            filename: file.name
+                            filename: file.name,
+                            selectedModel: selectedModel
                         })
                     });
 
                     const result = await response.json();
                     
-                    // Hide loading and steps
-                    loading.style.display = 'none';
-                    step1.style.display = 'none';
-
-                    if (response.ok) {
-                        lastCsvData = result.csvData;
-                        csvOutput.textContent = result.csvData;
-                        csvOutput.style.display = 'none'; // Hide raw CSV
-                        downloadBtn.style.display = 'block';
-                        progress.innerHTML = '<div class="success">Presentation processed successfully!</div>';
-                        
-                        // Display note if present
-                        if (result.note) {
-                            noteDiv.textContent = result.note;
-                            noteDiv.style.display = 'block';
-                        }
-                        
-                        // Parse CSV and populate table
-                        populateTable(result.csvData);
-                        resultsTable.style.display = 'table';
-                    } else {
-                        progress.innerHTML = `<div class="error">Error: ${result.error}</div>`;
-                        if (result.details) {
-                            const detailsDiv = document.createElement('div');
-                            detailsDiv.className = 'error';
-                            detailsDiv.style.marginTop = '10px';
-                            detailsDiv.textContent = `Details: ${result.details}`;
-                            progress.appendChild(detailsDiv);
-                        }
+                    if (result.error) {
+                        throw new Error(result.error);
                     }
-                };
 
-                reader.onerror = function() {
-                    loading.style.display = 'none';
-                    step1.style.display = 'none';
-                    progress.innerHTML = '<div class="error">Error reading file. Please try again with a different file.</div>';
+                    updateProgress('Generating results...', 100);
+                    setTimeout(() => {
+                        document.getElementById('progress').style.display = 'none';
+                        document.getElementById('results').style.display = 'block';
+                        document.getElementById('downloadSection').style.display = 'block';
+                        
+                        lastProcessedData = result.csvData;
+                        displayResults(result.csvData);
+                    }, 500);
                 };
-
+                
                 reader.readAsDataURL(file);
             } catch (error) {
-                loading.style.display = 'none';
-                step1.style.display = 'none';
-                progress.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('progress').style.display = 'none';
+                alert('Error processing document: ' + error.message);
             }
         }
-        
-        function populateTable(csvData) {
-            const resultsBody = document.getElementById('resultsBody');
-            resultsBody.innerHTML = '';
+
+        function displayResults(csvData) {
+            const rows = csvData.split('\n').map(row => row.split(','));
+            const table = document.createElement('table');
             
-            // Parse CSV
-            const lines = csvData.trim().split('\n');
-            const headers = lines[0].split(',');
+            // Create header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            rows[0].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header.replace(/"/g, '');
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
             
-            // Process each data row
-            for (let i = 1; i < lines.length; i++) {
-                // Handle commas within quoted strings
-                let row = [];
-                let inQuotes = false;
-                let currentValue = '';
-                
-                for (let char of lines[i]) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        row.push(currentValue);
-                        currentValue = '';
-                    } else {
-                        currentValue += char;
-                    }
-                }
-                
-                // Add the last value
-                row.push(currentValue);
-                
-                // Create table row
+            // Create body
+            const tbody = document.createElement('tbody');
+            rows.slice(1).forEach(row => {
                 const tr = document.createElement('tr');
-                
-                // Add slide number
-                const tdSlideNum = document.createElement('td');
-                tdSlideNum.textContent = row[0].replace(/"/g, '');
-                tr.appendChild(tdSlideNum);
-                
-                // Add title
-                const tdTitle = document.createElement('td');
-                tdTitle.textContent = row[1].replace(/"/g, '');
-                tr.appendChild(tdTitle);
-                
-                // Add summary
-                const tdSummary = document.createElement('td');
-                tdSummary.textContent = row[2].replace(/"/g, '');
-                tr.appendChild(tdSummary);
-                
-                resultsBody.appendChild(tr);
-            }
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell.replace(/"/g, '');
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            
+            document.getElementById('csvResults').innerHTML = '';
+            document.getElementById('csvResults').appendChild(table);
         }
 
-        function downloadCsv() {
-            if (!lastCsvData) return;
-
-            const blob = new Blob([lastCsvData], { type: 'text/csv' });
+        function downloadCSV() {
+            if (!lastProcessedData) return;
+            
+            const blob = new Blob([lastProcessedData], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'slide_extraction.csv';
+            a.download = 'medical_presentation_analysis.csv';
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         }
+
+        document.addEventListener('DOMContentLoaded', fetchModels);
     </script>
 </body>
 </html> 
